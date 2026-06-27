@@ -345,7 +345,7 @@
 
 <script>
 const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const VPS_API = 'http://187.127.106.130:8100';
+const VPS_API = 'https://srv1716579.hstgr.cloud/timesfm';
 const API = IS_LOCAL ? 'http://localhost:8000' : (window.__API_URL__ || VPS_API);
 const NO_BACKEND = false;
 
@@ -442,8 +442,8 @@ function showBackendDownBanner(statusCode) {
              <strong>터미널에서 실행:</strong><br>
              <code style="background:#21262d;padding:3px 8px;border-radius:4px;display:inline-block;margin-top:4px;">cd timesfm-forecast &amp;&amp; ./start.sh</code><br>
              실행 후 이 페이지를 새로고침하세요.`
-          : `Railway 백엔드 서버가 응답하지 않습니다.<br>
-             서버가 슬립 상태이거나 재배포 중일 수 있습니다. 1~2분 후 새로고침해주세요.<br>
+          : `VPS 백엔드 서버가 응답하지 않습니다.<br>
+             서버가 재시작 중일 수 있습니다. 잠시 후 새로고침해주세요.<br>
              <span style="font-size:11px;color:#8b949e;">백엔드: ${API}</span>`
         }
       </div>
