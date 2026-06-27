@@ -414,9 +414,52 @@ function showNoBackendBanner() {
 
 async function checkHealth() {
   try {
-    const r = await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(5000) });
-    if (r.ok) document.getElementById('dot').classList.add('on');
-  } catch {}
+    const r = await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(8000) });
+    if (r.ok) {
+      document.getElementById('dot').classList.add('on');
+      // 기존 연결 실패 배너 제거
+      const old = document.getElementById('backend-status-banner');
+      if (old) old.remove();
+    } else {
+      showBackendDownBanner(r.status);
+    }
+  } catch (e) {
+    showBackendDownBanner(null);
+  }
+}
+
+function showBackendDownBanner(statusCode) {
+  if (document.getElementById('backend-status-banner')) return;
+  const isLocal = IS_LOCAL;
+  const banner = document.createElement('div');
+  banner.id = 'backend-status-banner';
+  banner.innerHTML = `
+    <div style="background:rgba(248,81,73,0.08);border:1px solid rgba(248,81,73,0.3);border-radius:12px;padding:16px 20px;margin-bottom:20px;font-size:13px;line-height:1.8;">
+      <div style="font-weight:700;color:#f85149;margin-bottom:8px;">🔴 백엔드 서버에 연결할 수 없습니다 ${statusCode ? '(HTTP '+statusCode+')' : ''}</div>
+      <div style="color:#c9d1d9;">
+        ${isLocal
+          ? `로컬 백엔드가 실행 중이지 않습니다.<br>
+             <strong>터미널에서 실행:</strong><br>
+             <code style="background:#21262d;padding:3px 8px;border-radius:4px;display:inline-block;margin-top:4px;">cd timesfm-forecast &amp;&amp; ./start.sh</code><br>
+             실행 후 이 페이지를 새로고침하세요.`
+          : `Railway 백엔드 서버가 응답하지 않습니다.<br>
+             서버가 슬립 상태이거나 재배포 중일 수 있습니다. 1~2분 후 새로고침해주세요.<br>
+             <span style="font-size:11px;color:#8b949e;">백엔드: ${API}</span>`
+        }
+      </div>
+      <button onclick="retryHealth()" style="margin-top:10px;padding:6px 14px;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:12px;cursor:pointer;">🔄 다시 연결 시도</button>
+    </div>`;
+  const catTabs = document.querySelector('.cat-tabs');
+  catTabs.parentNode.insertBefore(banner, catTabs);
+}
+
+async function retryHealth() {
+  const banner = document.getElementById('backend-status-banner');
+  if (banner) banner.querySelector('button').textContent = '연결 중...';
+  await checkHealth();
+  // 연결 성공 시 배너는 checkHealth 내부에서 제거됨
+  const remaining = document.getElementById('backend-status-banner');
+  if (remaining) remaining.querySelector('button').textContent = '🔄 다시 연결 시도';
 }
 
 // ── 카테고리 전환 ──────────────────────────────────────────────────────────
