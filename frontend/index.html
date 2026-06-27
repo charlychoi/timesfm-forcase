@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TimesFM Forecast — 암호화폐 & 한국 주식</title>
+  <title>TimesFM — 한국 경제 AI 예측 대시보드</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -37,9 +37,12 @@
     .asset-grid{display:grid;gap:10px;margin-bottom:20px;}
     .asset-grid.crypto{grid-template-columns:repeat(3,1fr);}
     .asset-grid.kr_stock{grid-template-columns:repeat(4,1fr);}
-    @media(max-width:900px){.asset-grid.kr_stock{grid-template-columns:repeat(2,1fr);}}
-    @media(max-width:600px){.asset-grid.crypto{grid-template-columns:repeat(3,1fr);}.asset-grid.kr_stock{grid-template-columns:repeat(2,1fr);}}
-    @media(max-width:400px){.asset-grid.crypto{grid-template-columns:repeat(1,1fr);}.asset-grid.kr_stock{grid-template-columns:repeat(1,1fr);}}
+    .asset-grid.exchange{grid-template-columns:repeat(2,1fr);}
+    .asset-grid.apt{grid-template-columns:repeat(3,1fr);}
+    .asset-grid.cpi{grid-template-columns:repeat(3,1fr);}
+    @media(max-width:900px){.asset-grid.kr_stock{grid-template-columns:repeat(2,1fr);}.asset-grid.apt,.asset-grid.cpi{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:600px){.asset-grid.crypto{grid-template-columns:repeat(3,1fr);}.asset-grid.kr_stock,.asset-grid.apt,.asset-grid.cpi{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:400px){.asset-grid.crypto,.asset-grid.apt,.asset-grid.cpi{grid-template-columns:repeat(1,1fr);}.asset-grid.kr_stock{grid-template-columns:repeat(1,1fr);}}
 
     .asset-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:.2s;user-select:none;}
     .asset-card:hover{border-color:var(--muted);}
@@ -108,6 +111,11 @@
     .vol-high   {color:#e3b341;}
     .vol-vhigh  {color:#f85149;}
 
+    /* Low-confidence warning band in forecast cards */
+    .fc-warn{margin-top:6px;padding:5px 8px;border-radius:6px;font-size:10px;font-weight:600;text-align:center;}
+    .fc-warn.w-low{background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3);}
+    .fc-warn.w-vlow{background:rgba(139,148,158,.1);color:#8b949e;border:1px solid rgba(139,148,158,.3);}
+
     /* Interpret box */
     #interpret-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;display:none;}
     #interpret-box .interpret-title{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text);}
@@ -116,6 +124,16 @@
     /* Header responsive */
     @media(max-width:500px){header{flex-wrap:wrap;gap:8px;}.logo h1{font-size:15px;}.hdr-right{gap:6px;}.badge{display:none;}}
     @media(max-width:600px){#model-info{padding:12px 14px;}}
+
+    /* Summary bar */
+    .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:.2s;}
+    .sum-card:hover{border-color:var(--sc,var(--muted));}
+    .sum-cat{font-size:11px;font-weight:700;color:var(--sc,var(--muted));margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+    .sum-item{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;padding:1px 0;}
+    .sum-val{font-weight:600;color:var(--text);}
+    .sum-chg.up{color:var(--green);} .sum-chg.dn{color:var(--red);}
+    @media(max-width:700px){#summary-grid{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:400px){#summary-grid{grid-template-columns:repeat(1,1fr);}}
 
     footer{text-align:center;padding:20px 16px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);margin-top:12px;line-height:1.8;}
     footer a{color:var(--muted);text-decoration:none;}
@@ -128,8 +146,8 @@
   <div class="logo">
     <div class="logo-icon">📈</div>
     <div>
-      <h1>TimesFM Forecast</h1>
-      <p>암호화폐 & 한국 주식 AI 예측</p>
+      <h1>TimesFM 한국경제 대시보드</h1>
+      <p>암호화폐 · 주식 · 환율 · 아파트 · 물가 AI 예측</p>
     </div>
   </div>
   <div class="hdr-right">
@@ -167,6 +185,24 @@
             <div style="font-size:12px;">예측 컨텍스트: 최근 <strong>256일</strong> 종가 사용</div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">💱 환율 (USD/KRW · JPY/KRW)</div>
+            <div style="font-size:12px;">데이터 출처: <strong>한국은행 ECOS API</strong></div>
+            <div style="font-size:12px;">분석 기간: 최근 <strong>2년 (ffill 보간)</strong></div>
+            <div style="font-size:12px;">주의: <strong>주말·공휴일은 전일값으로 대체</strong></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🏢 아파트 실거래가 (서울·강남·노도강)</div>
+            <div style="font-size:12px;">데이터 출처: <strong>국토교통부 실거래가 공개시스템</strong></div>
+            <div style="font-size:12px;">분석 기간: 최근 <strong>36개월</strong></div>
+            <div style="font-size:12px;">단위: <strong>만원/㎡</strong> (IQR 이상치 제거 후 평균)</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">📊 소비자물가지수 (CPI)</div>
+            <div style="font-size:12px;">데이터 출처: <strong>한국은행 ECOS API</strong></div>
+            <div style="font-size:12px;">분석 기간: 최근 <strong>60개월</strong></div>
+            <div style="font-size:12px;">예측 주기: <strong>월별 (1·3·6·12개월)</strong></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
             <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🤖 모델 정보</div>
             <div style="font-size:12px;">모델: <strong>TimesFM 2.5 (200M 파라미터)</strong></div>
             <div style="font-size:12px;">예측 방식: <strong>패턴 기반 통계 추론</strong></div>
@@ -183,10 +219,54 @@
     </div>
   </div>
 
+  <!-- 전체 요약 바 -->
+  <div id="summary-bar" style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:600;color:var(--muted);">📌 전체 자산 요약</span>
+      <button onclick="runAllCategories()" id="btn-summary" style="padding:4px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:11px;cursor:pointer;">전체 예측 갱신</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="summary-grid">
+      <!-- 카테고리별 요약 카드 -->
+      <div class="sum-card" onclick="switchCat('crypto')" style="--sc:#F7931A">
+        <div class="sum-cat">🪙 암호화폐</div>
+        <div class="sum-item" id="sum-BTC">BTC <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-ETH">ETH <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-XRP">XRP <span class="sum-val">—</span></div>
+      </div>
+      <div class="sum-card" onclick="switchCat('kr_stock')" style="--sc:#E8343D">
+        <div class="sum-cat">🇰🇷 한국 주식</div>
+        <div class="sum-item" id="sum-005930">삼성전자 <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-KOSPI">KOSPI <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-000660">SK하닉스 <span class="sum-val">—</span></div>
+      </div>
+      <div class="sum-card" onclick="switchCat('exchange')" style="--sc:#10B981">
+        <div class="sum-cat">💱 환율</div>
+        <div class="sum-item" id="sum-USDKRW">USD/KRW <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-JPYKRW">JPY/KRW <span class="sum-val">—</span></div>
+        <div class="sum-item" style="color:var(--muted);font-size:10px;">한국은행 ECOS</div>
+      </div>
+      <div class="sum-card" onclick="switchCat('apt')" style="--sc:#8B5CF6">
+        <div class="sum-cat">🏢 아파트</div>
+        <div class="sum-item" id="sum-APT-SEOUL">서울 <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-APT-GANGNAM">강남3구 <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-APT-NOWON">노도강 <span class="sum-val">—</span></div>
+      </div>
+      <div class="sum-card" onclick="switchCat('cpi')" style="--sc:#F97316">
+        <div class="sum-cat">📊 소비자물가</div>
+        <div class="sum-item" id="sum-CPI-TOTAL">전체 <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-CPI-FOOD">식품 <span class="sum-val">—</span></div>
+        <div class="sum-item" id="sum-CPI-HOUSING">주거 <span class="sum-val">—</span></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Category tabs -->
   <div class="cat-tabs">
     <div class="cat-tab active" data-cat="crypto"   onclick="switchCat('crypto')">🪙 암호화폐</div>
-    <div class="cat-tab"       data-cat="kr_stock" onclick="switchCat('kr_stock')">🇰🇷 한국 주식</div>
+    <div class="cat-tab"       data-cat="kr_stock"  onclick="switchCat('kr_stock')">🇰🇷 한국 주식</div>
+    <div class="cat-tab"       data-cat="exchange"  onclick="switchCat('exchange')">💱 환율</div>
+    <div class="cat-tab"       data-cat="apt"       onclick="switchCat('apt')">🏢 아파트</div>
+    <div class="cat-tab"       data-cat="cpi"       onclick="switchCat('cpi')">📊 물가</div>
   </div>
 
   <!-- Asset grid — crypto -->
@@ -246,6 +326,74 @@
     </div>
   </div>
 
+  <!-- Asset grid — exchange (hidden by default) -->
+  <div class="asset-grid exchange" id="grid-exchange" style="display:none">
+    <div class="asset-card" data-sym="USDKRW" onclick="selectAsset('USDKRW')" style="--accent-color:#10B981">
+      <div class="ac-symbol" style="color:#10B981">USD / KRW</div>
+      <div class="ac-name">미국 달러 · 원화 (한국은행 ECOS)</div>
+      <div class="ac-price" id="ap-USDKRW">—</div>
+      <div class="ac-change" id="ac-USDKRW">—</div>
+      <div class="ac-kf" id="akf-USDKRW"></div>
+    </div>
+    <div class="asset-card" data-sym="JPYKRW" onclick="selectAsset('JPYKRW')" style="--accent-color:#EF4444">
+      <div class="ac-symbol" style="color:#EF4444">JPY / KRW</div>
+      <div class="ac-name">일본 엔 · 원화 100엔 (한국은행 ECOS)</div>
+      <div class="ac-price" id="ap-JPYKRW">—</div>
+      <div class="ac-change" id="ac-JPYKRW">—</div>
+      <div class="ac-kf" id="akf-JPYKRW"></div>
+    </div>
+  </div>
+
+  <!-- Asset grid — apt (hidden by default) -->
+  <div class="asset-grid apt" id="grid-apt" style="display:none">
+    <div class="asset-card" data-sym="APT-SEOUL" onclick="selectAsset('APT-SEOUL')" style="--accent-color:#8B5CF6">
+      <div class="ac-symbol" style="color:#8B5CF6">서울 전체</div>
+      <div class="ac-name">서울 아파트 평균 (국토부)</div>
+      <div class="ac-price" id="ap-APT-SEOUL">—</div>
+      <div class="ac-change" id="ac-APT-SEOUL">—</div>
+      <div class="ac-kf" id="akf-APT-SEOUL"></div>
+    </div>
+    <div class="asset-card" data-sym="APT-GANGNAM" onclick="selectAsset('APT-GANGNAM')" style="--accent-color:#F59E0B">
+      <div class="ac-symbol" style="color:#F59E0B">강남3구</div>
+      <div class="ac-name">강남·서초·송파 (국토부)</div>
+      <div class="ac-price" id="ap-APT-GANGNAM">—</div>
+      <div class="ac-change" id="ac-APT-GANGNAM">—</div>
+      <div class="ac-kf" id="akf-APT-GANGNAM"></div>
+    </div>
+    <div class="asset-card" data-sym="APT-NOWON" onclick="selectAsset('APT-NOWON')" style="--accent-color:#06B6D4">
+      <div class="ac-symbol" style="color:#06B6D4">노도강</div>
+      <div class="ac-name">노원·도봉·강북 (국토부)</div>
+      <div class="ac-price" id="ap-APT-NOWON">—</div>
+      <div class="ac-change" id="ac-APT-NOWON">—</div>
+      <div class="ac-kf" id="akf-APT-NOWON"></div>
+    </div>
+  </div>
+
+  <!-- Asset grid — cpi (hidden by default) -->
+  <div class="asset-grid cpi" id="grid-cpi" style="display:none">
+    <div class="asset-card" data-sym="CPI-TOTAL" onclick="selectAsset('CPI-TOTAL')" style="--accent-color:#F97316">
+      <div class="ac-symbol" style="color:#F97316">전체 CPI</div>
+      <div class="ac-name">소비자물가지수 전체 (한국은행)</div>
+      <div class="ac-price" id="ap-CPI-TOTAL">—</div>
+      <div class="ac-change" id="ac-CPI-TOTAL">—</div>
+      <div class="ac-kf" id="akf-CPI-TOTAL"></div>
+    </div>
+    <div class="asset-card" data-sym="CPI-FOOD" onclick="selectAsset('CPI-FOOD')" style="--accent-color:#EC4899">
+      <div class="ac-symbol" style="color:#EC4899">식품 CPI</div>
+      <div class="ac-name">식품·비주류음료 물가 (한국은행)</div>
+      <div class="ac-price" id="ap-CPI-FOOD">—</div>
+      <div class="ac-change" id="ac-CPI-FOOD">—</div>
+      <div class="ac-kf" id="akf-CPI-FOOD"></div>
+    </div>
+    <div class="asset-card" data-sym="CPI-HOUSING" onclick="selectAsset('CPI-HOUSING')" style="--accent-color:#14B8A6">
+      <div class="ac-symbol" style="color:#14B8A6">주거 CPI</div>
+      <div class="ac-name">주거·수도·광열 물가 (한국은행)</div>
+      <div class="ac-price" id="ap-CPI-HOUSING">—</div>
+      <div class="ac-change" id="ac-CPI-HOUSING">—</div>
+      <div class="ac-kf" id="akf-CPI-HOUSING"></div>
+    </div>
+  </div>
+
   <!-- Action -->
   <div class="action-row">
     <button id="btn-fc"  onclick="runForecast()">🔮 <span id="btn-txt">예측 실행</span></button>
@@ -298,7 +446,7 @@
           <th>변화율</th>
           <th>10% 하한</th>
           <th>90% 상한</th>
-          <th>신뢰도</th>
+          <th title="70 이상: 참고 가능 | 50~69: 제한적 참고 가능 | 30~49: 주의 필요 | 0~29: 시나리오 참고 수준" style="cursor:help">신뢰도 ℹ</th>
           <th>백테스트 오차</th>
           <th>방향성 적중률</th>
           <th>변동성</th>
@@ -308,6 +456,13 @@
         <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">예측 실행 후 표시됩니다</td></tr>
       </tbody>
     </table>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);align-items:center;">
+      <span>신뢰도 범례:</span>
+      <span class="conf-badge conf-high">70–100</span><span>참고 가능</span>
+      <span class="conf-badge conf-mid">50–69</span><span>제한적 참고</span>
+      <span class="conf-badge conf-low">30–49</span><span>주의 필요</span>
+      <span class="conf-badge conf-vlow">0–29</span><span>시나리오 참고 수준</span>
+    </div>
   </div>
 
 </main>
@@ -328,9 +483,8 @@
       본 서비스 제공자는 예측 정보를 근거로 한 투자 손실에 대해 <strong style="color:var(--text);">어떠한 법적·재정적 책임도 지지 않습니다.</strong>
       <br><br>
       <span style="color:var(--muted);font-size:11px;">
-        데이터 출처: CoinGecko (암호화폐), Yahoo Finance (한국 주식) ·
-        모델: Google Research TimesFM 2.5 ·
-        본 서비스는 Google의 공식 제품이 아닙니다.
+        데이터 출처: CoinGecko (암호화폐) · Yahoo Finance (한국 주식) · 한국은행 ECOS (환율·물가) · 국토교통부 실거래가 (아파트) ·
+        모델: Google Research TimesFM 2.5 · 본 서비스는 Google의 공식 제품이 아닙니다.
       </span>
     </div>
   </div>
@@ -339,7 +493,9 @@
 <footer>
   Powered by <a href="https://github.com/google-research/timesfm" target="_blank">Google TimesFM 2.5</a> ·
   암호화폐: <a href="https://www.coingecko.com" target="_blank">CoinGecko</a> ·
-  주식: <a href="https://finance.yahoo.com" target="_blank">Yahoo Finance</a><br>
+  주식: <a href="https://finance.yahoo.com" target="_blank">Yahoo Finance</a> ·
+  환율·물가: <a href="https://ecos.bok.or.kr" target="_blank">한국은행 ECOS</a> ·
+  아파트: <a href="https://rtms.molit.go.kr" target="_blank">국토교통부 실거래가</a><br>
   <span style="margin-top:6px;display:block">Made by <a href="https://www.youtube.com/@CharlyChoi/" target="_blank">Charly Choi</a></span>
 </footer>
 
@@ -357,6 +513,9 @@ const cache = {};
 const CAT_SYMS = {
   crypto:   ['BTC', 'ETH', 'XRP'],
   kr_stock: ['005930', '000660', '005380', 'KOSPI'],
+  exchange: ['USDKRW', 'JPYKRW'],
+  apt:      ['APT-SEOUL', 'APT-GANGNAM', 'APT-NOWON'],
+  cpi:      ['CPI-TOTAL', 'CPI-FOOD', 'CPI-HOUSING'],
 };
 
 // ── safeFetchJson ─────────────────────────────────────────────────────────
@@ -391,6 +550,13 @@ async function safeFetchJson(url, options = {}) {
 // ── 초기화 ────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   checkHealth();
+  // 모든 자산 카드 초기 상태 표시
+  for (const syms of Object.values(CAT_SYMS)) {
+    for (const sym of syms) {
+      const el = document.getElementById(`akf-${sym}`);
+      if (el) el.innerHTML = '<span style="font-size:10px;color:var(--muted)">예측 미실행</span>';
+    }
+  }
   selectAsset('BTC');
   if (NO_BACKEND) showNoBackendBanner();
 });
@@ -468,6 +634,9 @@ function switchCat(cat) {
   document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
   document.getElementById('grid-crypto').style.display   = cat === 'crypto'   ? 'grid' : 'none';
   document.getElementById('grid-kr_stock').style.display = cat === 'kr_stock' ? 'grid' : 'none';
+  document.getElementById('grid-exchange').style.display = cat === 'exchange' ? 'grid' : 'none';
+  document.getElementById('grid-apt').style.display      = cat === 'apt'      ? 'grid' : 'none';
+  document.getElementById('grid-cpi').style.display      = cat === 'cpi'      ? 'grid' : 'none';
   const first = CAT_SYMS[cat][0];
   selectAsset(first);
 }
@@ -509,10 +678,12 @@ async function doForecast(sym, silent = false) {
   const btnFc   = document.getElementById('btn-fc');
   const loading = document.getElementById('chart-loading');
   const errMsg  = document.getElementById('err-msg');
+  const kfEl    = document.getElementById(`akf-${sym}`);
   btnFc.disabled = true;
   document.getElementById('btn-txt').textContent = '예측 중...';
   loading.style.display = 'flex';
   errMsg.style.display  = 'none';
+  if (kfEl) kfEl.innerHTML = '<span style="font-size:10px;color:#e3b341">⏳ 예측 중...</span>';
 
   try {
     const data = await safeFetchJson(
@@ -523,6 +694,7 @@ async function doForecast(sym, silent = false) {
     if (data.error === true) throw new Error('BACKEND_UNAVAILABLE');
     cache[sym] = data;
     updateCard(sym, data);
+    updateSummaryBar(sym, data);
     if (!silent || sym === currentSym) { renderResult(data); setStatusMsg(data); }
   } catch (e) {
     let msg = e.message || '알 수 없는 오류';
@@ -536,6 +708,7 @@ async function doForecast(sym, silent = false) {
     errMsg.innerHTML = `❌ 예측 실패: ${msg}`;
     errMsg.style.display = 'block';
     document.getElementById('status-msg').textContent = '예측 실패';
+    if (kfEl) kfEl.innerHTML = '<span style="font-size:10px;color:#f85149">⚠ 로딩 오류</span>';
   } finally {
     loading.style.display = 'none';
     btnFc.disabled = false;
@@ -549,8 +722,11 @@ function renderResult(data) {
   renderInterpretBox(data);
   renderChart(data);
   renderTable(data);
-  document.getElementById('chart-title').textContent = `${data.name} (${data.symbol}) 30일 예측`;
-  document.getElementById('chart-meta').textContent  = 'TimesFM 2.5 Zero-Shot · 과거 90일 + 향후 30일';
+  const isMonthly = data.time_unit === '개월';
+  const horizonLabel = isMonthly ? '12개월' : '30일';
+  const historyLabel = isMonthly ? '36개월' : '90일';
+  document.getElementById('chart-title').textContent = `${data.name} (${data.symbol}) ${horizonLabel} 예측`;
+  document.getElementById('chart-meta').textContent  = `TimesFM 2.5 Zero-Shot · 과거 ${historyLabel} + 향후 ${horizonLabel}`;
   document.getElementById('chart-note').style.display = '';
 }
 
@@ -574,9 +750,11 @@ function updateCard(sym, data) {
 
   if (priceEl)  priceEl.textContent = fmtPrice(data.currency, data.current_price, data.symbol);
   if (changeEl) {
+    const isMonthly = data.time_unit === '개월';
+    const changeLabel = isMonthly ? '전월비' : '1일';
     const s = data.change_24h >= 0 ? '+' : '';
     changeEl.className = `ac-change ${data.change_24h >= 0 ? 'up' : 'down'}`;
-    changeEl.textContent = `${s}${data.change_24h}%`;
+    changeEl.textContent = `${changeLabel} ${s}${data.change_24h}%`;
   }
   if (kfEl) {
     const kf7 = data.key_forecasts && data.key_forecasts['d7'];
@@ -597,20 +775,33 @@ function updateCard(sym, data) {
 function renderCards(data) {
   const c = data.color;
   for (const d of [1, 7, 14, 30]) {
-    const kf  = data.key_forecasts[`d${d}`];
-    const s   = kf.pct_change >= 0 ? '+' : '';
-    const cl  = kf.pct_change >= 0 ? 'up' : 'down';
-    const confCls = confBadgeClass(kf.confidence_score != null ? kf.confidence_score : 0);
+    const kf      = data.key_forecasts[`d${d}`];
+    const label   = kf.label || `${d}일 후`;
+    const s       = kf.pct_change >= 0 ? '+' : '';
+    const cl      = kf.pct_change >= 0 ? 'up' : 'down';
+    const score   = kf.confidence_score != null ? kf.confidence_score : 0;
+    const confCls = confBadgeClass(score);
     const mapeStr = kf.mape != null ? `±${kf.mape}%` : '—';
     const daStr   = kf.directional_accuracy != null ? `${kf.directional_accuracy}%` : '—';
     const volCls  = volBadgeClass(kf.volatility_level || '');
 
+    const isLowConf  = score < 20;
+    const priceColor = isLowConf ? 'var(--muted)' : c;
+    const dimOpacity = isLowConf ? 'opacity:0.5' : '';
+    let warnHtml = '';
+    if (score <= 10) {
+      warnHtml = `<div class="fc-warn w-vlow">⚠ 예측 신뢰 불가 — 시나리오 참고만</div>`;
+    } else if (isLowConf) {
+      warnHtml = `<div class="fc-warn w-low">⚠ 신뢰도 극히 낮음 — 주의 필요</div>`;
+    }
+
     document.getElementById(`card-d${d}`).innerHTML = `
-      <div class="fc-label">${d}일 후</div>
-      <div class="fc-price" style="color:${c}">${fmtPrice(data.currency, kf.price, data.symbol)}</div>
-      <div class="fc-pct ${cl}">${s}${kf.pct_change}%</div>
+      <div class="fc-label">${label}</div>
+      <div class="fc-price" style="color:${priceColor}">${fmtPrice(data.currency, kf.price, data.symbol)}</div>
+      <div class="fc-pct ${cl}" style="${dimOpacity}">${s}${kf.pct_change}%</div>
+      ${warnHtml}
       <div class="fc-range">범위: ${fmtPrice(data.currency, kf.q10, data.symbol)} ~ ${fmtPrice(data.currency, kf.q90, data.symbol)}</div>
-      <div class="fc-date">${kf.date}</div>
+      <div class="fc-date">${kf.date ? kf.date.slice(0,7) : ''}</div>
       <div class="fc-meta">
         신뢰도: <span class="conf-badge ${confCls}">${kf.confidence_score != null ? kf.confidence_score + '/100' : '—'}</span><br>
         등급: ${kf.confidence_label || '—'}<br>
@@ -638,10 +829,13 @@ function renderChart(data) {
   const c   = data.color;
   const ctx = document.getElementById('priceChart').getContext('2d');
   const hLen = data.history_prices.length;
+  const isMonthly = data.time_unit === '개월';
+  const labelFmt  = d => isMonthly ? d.slice(0, 7) : d.slice(5);
   const allLabels = [
-    ...data.history_dates.map(d => d.slice(5)),
-    ...data.forecast_dates.map(d => d.slice(5))
+    ...data.history_dates.map(labelFmt),
+    ...data.forecast_dates.map(labelFmt)
   ];
+  const fLen = data.forecast_prices.length;
 
   if (chart) chart.destroy();
   chart = new Chart(ctx, {
@@ -651,7 +845,7 @@ function renderChart(data) {
       datasets: [
         {
           label: '실제 가격',
-          data: [...data.history_prices, ...Array(30).fill(null)],
+          data: [...data.history_prices, ...Array(fLen).fill(null)],
           borderColor: '#58a6ff',
           borderWidth: 2,
           pointRadius: 0,
@@ -750,17 +944,18 @@ function renderTable(data) {
   const c = data.color;
   let html = '';
   for (const d of [1, 7, 14, 30]) {
-    const kf     = data.key_forecasts[`d${d}`];
-    const s      = kf.pct_change >= 0 ? '+' : '';
-    const cl     = kf.pct_change >= 0 ? 'up' : 'down';
+    const kf      = data.key_forecasts[`d${d}`];
+    const label   = kf.label || `${d}일 후`;
+    const s       = kf.pct_change >= 0 ? '+' : '';
+    const cl      = kf.pct_change >= 0 ? 'up' : 'down';
     const confCls = confBadgeClass(kf.confidence_score != null ? kf.confidence_score : 0);
     const mapeStr = kf.mape != null ? `±${kf.mape}%` : '—';
     const daStr   = kf.directional_accuracy != null ? `${kf.directional_accuracy}%` : '—';
     const volCls  = volBadgeClass(kf.volatility_level || '');
 
     html += `<tr>
-      <td><strong>${d}일 후</strong></td>
-      <td style="color:var(--muted)">${kf.date}</td>
+      <td><strong>${label}</strong></td>
+      <td style="color:var(--muted)">${kf.date ? kf.date.slice(0,7) : ''}</td>
       <td style="color:${c};font-weight:600">${fmtPrice(data.currency, kf.price, data.symbol)}</td>
       <td class="${cl}" style="font-weight:600">${s}${kf.pct_change}%</td>
       <td style="color:var(--muted)">${fmtPrice(data.currency, kf.q10, data.symbol)}</td>
@@ -794,8 +989,12 @@ function setStatusMsg(data) {
 // ── 포맷 유틸 ─────────────────────────────────────────────────────────────
 function fmtPrice(currency, price, symbol) {
   if (price == null || isNaN(price)) return '—';
+  if (currency === 'INDEX') return price.toFixed(2);  // CPI 지수
   if (currency === 'KRW') {
-    if (symbol === 'KOSPI') return price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (symbol === 'KOSPI')          return price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (symbol === 'USDKRW')         return price.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '원';
+    if (symbol === 'JPYKRW')         return price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '원';
+    if (symbol && symbol.startsWith('APT-')) return price.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + '만원/㎡';
     return price.toLocaleString('ko-KR') + '원';
   }
   if (price < 10)  return '$' + price.toFixed(4);
@@ -804,6 +1003,40 @@ function fmtPrice(currency, price, symbol) {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── 요약 바 업데이트 ──────────────────────────────────────────────────────
+function updateSummaryBar(sym, data) {
+  const el = document.getElementById(`sum-${sym}`);
+  if (!el) return;
+  const val  = el.querySelector('.sum-val');
+  if (!val) return;
+  const price = fmtPrice(data.currency, data.current_price, data.symbol);
+  const chg   = data.change_24h;
+  const s     = chg >= 0 ? '+' : '';
+  const cls   = chg >= 0 ? 'up' : 'dn';
+  val.innerHTML = `${price} <span class="sum-chg ${cls}">${s}${chg}%</span>`;
+}
+
+async function runAllCategories() {
+  const btn = document.getElementById('btn-summary');
+  btn.textContent = '예측 중...';
+  btn.disabled = true;
+  const allSyms = Object.values(CAT_SYMS).flat();
+  for (const sym of allSyms) {
+    try {
+      const data = await safeFetchJson(`${API}/api/forecast/${sym}`, { signal: AbortSignal.timeout(180000) });
+      cache[sym] = data;
+      updateCard(sym, data);
+      updateSummaryBar(sym, data);
+      if (sym === currentSym) { renderResult(data); setStatusMsg(data); }
+    } catch(e) {
+      console.warn(`[summary] ${sym} 실패: ${e.message}`);
+    }
+    await sleep(1500);
+  }
+  btn.textContent = '전체 예측 갱신';
+  btn.disabled = false;
+}
 </script>
 </body>
 </html>
