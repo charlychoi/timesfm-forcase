@@ -16,6 +16,7 @@ import urllib.request
 import urllib.error
 import time
 import os
+import math
 from datetime import datetime, timedelta
 
 torch.set_float32_matmul_precision("high")
@@ -165,7 +166,8 @@ def calculate_mape(actual: list, predicted: list) -> float | None:
             errors.append(abs((a - p) / a) * 100)
     if not errors:
         return None
-    return sum(errors) / len(errors)
+    result = sum(errors) / len(errors)
+    return None if math.isnan(result) or math.isinf(result) else result
 
 
 def calculate_directional_accuracy(base: list, actual: list, predicted: list) -> float | None:
@@ -215,10 +217,10 @@ def calculate_confidence_score(
     horizon: int
 ) -> dict:
     """예측 신뢰도 점수(0~100) + 등급 레이블 계산"""
-    score = 100
+    score = 100.0
 
     # MAPE 패널티
-    if mape is not None:
+    if mape is not None and not math.isnan(mape):
         score -= min(mape * 3, 40)
     else:
         score -= 25
@@ -240,11 +242,14 @@ def calculate_confidence_score(
     score -= horizon_penalty.get(horizon, 15)
 
     # 방향성 정확도 보너스/패널티
-    if directional_acc is not None:
+    if directional_acc is not None and not math.isnan(directional_acc):
         if directional_acc >= 60:    score += 10
         elif directional_acc >= 55:  score += 5
         elif directional_acc < 50:   score -= 5
 
+    # NaN/Inf 안전 처리
+    if math.isnan(score) or math.isinf(score):
+        score = 30
     score = max(0, min(100, round(score)))
 
     if score >= 70:    label = "참고 가능"
