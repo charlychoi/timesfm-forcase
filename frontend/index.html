@@ -11,6 +11,17 @@
     :root {
       --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --border:#30363d;
       --text:#e6edf3; --muted:#8b949e; --green:#3fb950; --red:#f85149; --r:12px;
+      --hero-bg1:#0a0e1a; --hero-bg2:#0d1117; --hero-bg3:#0f1629;
+      --theme-transition: background .3s, color .3s, border-color .3s;
+    }
+    body.light {
+      --bg:#f0f2f5; --surface:#ffffff; --surface2:#e8eaed; --border:#d0d7de;
+      --text:#1f2328; --muted:#57606a; --green:#1a7f37; --red:#cf222e;
+      --hero-bg1:#1a1040; --hero-bg2:#0f1629; --hero-bg3:#0a0e1a;
+    }
+    body, header, main, section, footer, .asset-card, .fc-card, .chart-box,
+    .tbl-box, .cat-tab, .action-row, #interpret-box, #model-info {
+      transition: var(--theme-transition);
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;line-height:1.6;letter-spacing:-0.2px;min-height:100vh;}
@@ -33,6 +44,10 @@
       border-bottom:1px solid var(--border);
       padding:56px 24px 48px;
       text-align:center;
+      transition:background .3s;
+    }
+    body.light .hero{
+      background:linear-gradient(135deg,#1a1040 0%,#0f1629 40%,#0a0e1a 70%,#1a1040 100%);
     }
     .hero-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.35;pointer-events:none;}
     .hero-content{position:relative;z-index:1;max-width:760px;margin:0 auto;}
@@ -145,6 +160,30 @@
     #interpret-box .interpret-title{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--text);}
     #interpret-box .interpret-text {font-size:15px;color:var(--muted);line-height:1.9;}
 
+    /* Theme toggle */
+    #theme-toggle{
+      display:flex;align-items:center;gap:7px;
+      background:var(--surface2);border:1px solid var(--border);
+      border-radius:20px;padding:5px 12px;cursor:pointer;
+      font-size:12px;color:var(--muted);user-select:none;
+      transition:var(--theme-transition);
+    }
+    #theme-toggle:hover{border-color:var(--muted);color:var(--text);}
+    .toggle-track{
+      width:32px;height:17px;border-radius:9px;
+      background:var(--border);position:relative;
+      transition:background .3s;
+      flex-shrink:0;
+    }
+    body.light .toggle-track{background:#6e40c9;}
+    .toggle-thumb{
+      width:13px;height:13px;border-radius:50%;
+      background:#fff;position:absolute;top:2px;left:2px;
+      transition:left .25s;
+      box-shadow:0 1px 3px rgba(0,0,0,.3);
+    }
+    body.light .toggle-thumb{left:17px;}
+    #theme-icon{font-size:14px;line-height:1;}
     /* Header responsive */
     @media(max-width:500px){header{flex-wrap:wrap;gap:8px;}.logo h1{font-size:15px;}.hdr-right{gap:6px;}.badge{display:none;}}
     @media(max-width:600px){#model-info{padding:12px 14px;}}
@@ -176,6 +215,11 @@
   </div>
   <div class="hdr-right">
     <span class="badge">TimesFM 2.5 · Zero-Shot</span>
+    <button id="theme-toggle" onclick="toggleTheme()" title="밝은/어두운 테마 전환">
+      <span id="theme-icon">🌙</span>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      <span id="theme-label">다크</span>
+    </button>
     <div id="dot" title="API 상태"></div>
   </div>
 </header>
@@ -586,6 +630,26 @@ async function safeFetchJson(url, options = {}) {
 }
 
 // ── 초기화 ────────────────────────────────────────────────────────────────
+// ── Theme Toggle ────────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('theme-icon').textContent  = isLight ? '☀️' : '🌙';
+  document.getElementById('theme-label').textContent = isLight ? '라이트' : '다크';
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+}
+// 저장된 테마 적용
+(function(){
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    // DOM 준비 후 아이콘 교체
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('theme-icon').textContent  = '☀️';
+      document.getElementById('theme-label').textContent = '라이트';
+    });
+  }
+})();
+
 // ── Hero Canvas 애니메이션 ───────────────────────────────────────────────
 (function initHeroCanvas() {
   const canvas = document.getElementById('heroCanvas');
@@ -613,7 +677,7 @@ async function safeFetchJson(url, options = {}) {
       y = Math.max(H * 0.1, Math.min(H * 0.9, y));
       pts.push({ x, y });
     }
-    const colors = ['#6e40c9','#3fb950','#a78bfa','#58a6ff'];
+    const colors = ['#6e40c9','#3fb950','#a78bfa','#58a6ff','#e3b341'];
     return { pts, color: colors[LINES.length % colors.length], alpha: 0.5 + Math.random() * 0.3, width: 1 + Math.random() };
   }
 
