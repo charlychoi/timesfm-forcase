@@ -11,3 +11,4 @@ build/
 *.log
 .cache/
 huggingface/
+.vercel

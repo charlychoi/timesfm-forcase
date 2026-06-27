@@ -299,11 +299,9 @@
 </footer>
 
 <script>
-// 로컬: localhost:8000 백엔드 사용
-// 배포: 같은 origin 또는 VERCEL_API_URL 환경변수로 외부 백엔드 지정 가능
-const API = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
-  ? 'http://localhost:8000'
-  : (window.__API_URL__ || '');  // Vercel 배포 시 외부 백엔드 URL 주입 가능
+const IS_LOCAL = location.hostname==='localhost' || location.hostname==='127.0.0.1';
+const API = IS_LOCAL ? 'http://localhost:8000' : (window.__API_URL__ || '');
+const NO_BACKEND = !IS_LOCAL && !window.__API_URL__;
 
 let currentSym = 'BTC';
 let currentCat = 'crypto';
@@ -319,7 +317,49 @@ const CAT_SYMS = {
 window.addEventListener('DOMContentLoaded', () => {
   checkHealth();
   selectAsset('BTC');
+  if (NO_BACKEND) showNoBackendBanner();
 });
+
+function showNoBackendBanner() {
+  // 액션 버튼 비활성화
+  document.getElementById('btn-fc').disabled = true;
+  document.getElementById('btn-all').disabled = true;
+
+  // 배너 삽입
+  const banner = document.createElement('div');
+  banner.id = 'no-backend-banner';
+  banner.innerHTML = `
+    <div style="
+      background:rgba(210,153,34,0.12);
+      border:1px solid rgba(210,153,34,0.4);
+      border-radius:12px;
+      padding:16px 20px;
+      margin-bottom:20px;
+      font-size:13px;
+      line-height:1.8;
+    ">
+      <div style="font-weight:700;color:#e3b341;margin-bottom:6px;">🚧 백엔드 서버 연결 필요</div>
+      <div style="color:#c9d1d9;">
+        이 페이지는 <strong>UI 펙</strong>다. 실제 예측을 실행하려면 
+        <strong>TimesFM Python 백엔드 서버</strong>를 실행해야 합니다.<br>
+        <br>
+        <strong>💻 로컈에서 실행하는 방법:</strong><br>
+        <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:12px;">
+          git clone https://github.com/charlychoi/timesfm-forcase.git<br>
+          cd timesfm-forcase &amp;&amp; pip install -r requirements.txt<br>
+          cd api &amp;&amp; uvicorn main:app --port 8000
+        </code><br>
+        <br>
+        그리고 및 브라우저에서 <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">http://localhost:8000</code> 접속.<br>
+        <br>
+        <span style="color:#8b949e;font-size:11px;">ℹ️ TimesFM(torch 315MB)이 Vercel 서버리스 용량(250MB)을 초과하여 백엔드는 로컈 또는 별도 서버(Railway/Render)에서 실행해야 합니다.</span>
+      </div>
+    </div>
+  `;
+  // cat-tabs 앞에 삽입
+  const catTabs = document.querySelector('.cat-tabs');
+  catTabs.parentNode.insertBefore(banner, catTabs);
+}
 
 async function checkHealth() {
   try {
@@ -382,18 +422,30 @@ async function doForecast(sym, silent=false) {
 
   try {
     const r = await fetch(`${API}/api/forecast/${sym}`, {signal:AbortSignal.timeout(180000)});
-    if (!r.ok) { const e=await r.json(); throw new Error(e.detail||'서버 오류'); }
+    // Content-Type 확인 후 JSON 파싱
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      throw new Error('BACKEND_UNAVAILABLE');
+    }
     const data = await r.json();
+    // Vercel fallback JSON 체크
+    if (data.error === true) throw new Error('BACKEND_UNAVAILABLE');
+    if (!r.ok) throw new Error(data.detail || '서버 오류');
     cache[sym] = data;
     updateCard(sym, data);
     if (!silent || sym===currentSym) { renderResult(data); setStatusMsg(data); }
   } catch(e) {
-    let msg = e.message||'알 수 없는 오류';
-    if (msg.includes('429'))            msg = 'API 요청 한도 초과 (429). 잠시 후 재시도하세요.';
-    if (msg.includes('Failed to fetch')) msg = '서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.';
-    errMsg.textContent = `오류: ${msg}`;
+    let msg = e.message || '알 수 없는 오류';
+    if (msg === 'BACKEND_UNAVAILABLE' || msg.includes('not valid JSON') || msg.includes('Unexpected token')) {
+      msg = '백엔드 서버에 연결할 수 없습니다. 로컈에서 <code>uvicorn main:app --port 8000</code> 실행 후 재시도하세요.';
+    } else if (msg.includes('429')) {
+      msg = 'API 요청 한도 초과(429). 잠시 후 재시도하세요.';
+    } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
+      msg = '백엔드 서버에 연결할 수 없습니다. localhost:8000이 실행 중인지 확인하세요.';
+    }
+    errMsg.innerHTML = `❌ 예측 실패: ${msg}`;
     errMsg.style.display = 'block';
-    document.getElementById('status-msg').textContent = '예측 실패 — 잠시 후 재시도하세요.';
+    document.getElementById('status-msg').textContent = '예측 실패';
   } finally {
     loading.style.display = 'none';
     btnFc.disabled = false;

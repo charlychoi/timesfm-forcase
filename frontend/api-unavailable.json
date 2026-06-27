@@ -1,0 +1,1 @@
+{"error": true, "detail": "백엔드 서버가 연결되지 않았습니다. 로컬에서 uvicorn main:app --port 8000 을 실행한 후 http://localhost:8000 으로 접속하세요."}

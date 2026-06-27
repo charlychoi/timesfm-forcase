@@ -1,14 +1,15 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "frontend/**",
-      "use": "@vercel/static"
-    }
-  ],
+  "outputDirectory": "frontend",
   "routes": [
-    { "src": "/(.*)", "dest": "frontend/$1" },
-    { "src": "/",     "dest": "frontend/index.html" }
-  ],
-  "outputDirectory": "frontend"
+    {
+      "src": "/api/(.*)",
+      "headers": { "Content-Type": "application/json" },
+      "dest": "/api-unavailable.json"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
 }
