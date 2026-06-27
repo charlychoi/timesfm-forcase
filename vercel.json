@@ -1,6 +1,9 @@
 {
   "version": 2,
   "outputDirectory": "frontend",
+  "buildCommand": "",
+  "installCommand": "",
+  "framework": null,
   "routes": [
     {
       "src": "/api/(.*)",
@@ -8,8 +11,16 @@
       "dest": "/api-unavailable.json"
     },
     {
-      "src": "/(.*)",
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*\\.(js|css|json|png|ico|svg|woff2?))",
       "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
