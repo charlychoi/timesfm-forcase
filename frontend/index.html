@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TimesFM — 한국 경제 AI 예측 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -11,17 +13,17 @@
       --text:#e6edf3; --muted:#8b949e; --green:#3fb950; --red:#f85149; --r:12px;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;}
+    body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;line-height:1.6;letter-spacing:-0.2px;min-height:100vh;}
 
     /* Header */
     header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
     .logo{display:flex;align-items:center;gap:10px;}
-    .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#6e40c9,#2ea043);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
-    .logo h1{font-size:17px;font-weight:700;}
-    .logo p{font-size:11px;color:var(--muted);}
+    .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#6e40c9,#2ea043);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .logo h1{font-size:19px;font-weight:700;}
+    .logo p{font-size:13px;color:var(--muted);}
     .hdr-right{display:flex;align-items:center;gap:10px;}
-    .badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--muted);}
-    #dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+    .badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);}
+    #dot{width:9px;height:9px;border-radius:50%;background:var(--muted);}
     #dot.on{background:var(--green);box-shadow:0 0 6px var(--green);}
 
     /* Main */
@@ -29,9 +31,9 @@
 
     /* Category tabs */
     .cat-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-    .cat-tab{padding:8px 20px;background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;color:var(--muted);transition:.2s;white-space:nowrap;}
+    .cat-tab{padding:10px 22px;background:var(--surface);border:1px solid var(--border);border-radius:22px;cursor:pointer;font-size:15px;color:var(--muted);transition:.2s;white-space:nowrap;}
     .cat-tab:hover{color:var(--text);}
-    .cat-tab.active{background:var(--surface2);border-color:var(--text);color:var(--text);font-weight:600;}
+    .cat-tab.active{background:var(--surface2);border-color:var(--text);color:var(--text);font-weight:700;}
 
     /* Asset grid */
     .asset-grid{display:grid;gap:10px;margin-bottom:20px;}
@@ -44,63 +46,63 @@
     @media(max-width:600px){.asset-grid.crypto{grid-template-columns:repeat(3,1fr);}.asset-grid.kr_stock,.asset-grid.apt,.asset-grid.cpi{grid-template-columns:repeat(2,1fr);}}
     @media(max-width:400px){.asset-grid.crypto,.asset-grid.apt,.asset-grid.cpi{grid-template-columns:repeat(1,1fr);}.asset-grid.kr_stock{grid-template-columns:repeat(1,1fr);}}
 
-    .asset-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:.2s;user-select:none;}
+    .asset-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;transition:.2s;user-select:none;}
     .asset-card:hover{border-color:var(--muted);}
     .asset-card.selected{border-color:var(--accent-color,#fff);}
-    .ac-symbol{font-size:14px;font-weight:700;margin-bottom:2px;word-break:break-all;}
-    .ac-name{font-size:11px;color:var(--muted);}
-    .ac-price{font-size:14px;font-weight:700;margin-top:5px;word-break:break-all;}
-    .ac-change{font-size:11px;margin-top:2px;}
-    .ac-kf{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.7;border-top:1px solid var(--border);padding-top:5px;min-height:14px;}
+    .ac-symbol{font-size:16px;font-weight:700;margin-bottom:3px;word-break:break-all;}
+    .ac-name{font-size:13px;color:var(--muted);}
+    .ac-price{font-size:16px;font-weight:700;margin-top:6px;word-break:break-all;}
+    .ac-change{font-size:13px;margin-top:3px;}
+    .ac-kf{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.8;border-top:1px solid var(--border);padding-top:6px;min-height:16px;}
     .up{color:var(--green);} .down{color:var(--red);}
 
     /* Action row */
-    .action-row{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
-    #btn-fc{padding:11px 20px;background:#238636;border:1px solid #2ea043;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s;white-space:nowrap;}
+    .action-row{display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+    #btn-fc{padding:13px 24px;background:#238636;border:1px solid #2ea043;border-radius:10px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;transition:.2s;white-space:nowrap;}
     #btn-fc:hover{background:#2ea043;} #btn-fc:disabled{opacity:.5;cursor:not-allowed;}
-    #btn-all{padding:11px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;transition:.2s;white-space:nowrap;}
+    #btn-all{padding:13px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;cursor:pointer;transition:.2s;white-space:nowrap;}
     #btn-all:hover{border-color:var(--muted);} #btn-all:disabled{opacity:.5;cursor:not-allowed;}
-    #status-msg{font-size:12px;color:var(--muted);flex:1;min-width:0;word-break:break-all;}
+    #status-msg{font-size:14px;color:var(--muted);flex:1;min-width:0;word-break:break-all;}
     @media(max-width:500px){.action-row{flex-direction:column;align-items:stretch;}#btn-fc,#btn-all{justify-content:center;}}
 
     /* Error */
     .err{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:8px;padding:14px;color:var(--red);font-size:13px;margin-bottom:16px;display:none;word-break:break-all;}
 
     /* Key forecast cards */
-    .fc-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+    .fc-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
     @media(max-width:700px){.fc-cards{grid-template-columns:repeat(2,1fr);}}
     @media(max-width:360px){.fc-cards{grid-template-columns:repeat(1,1fr);}}
-    .fc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
-    .fc-label{font-size:11px;color:var(--muted);margin-bottom:6px;}
-    .fc-price{font-size:18px;font-weight:700;margin-bottom:3px;word-break:break-all;}
-    .fc-pct{font-size:13px;font-weight:600;margin-bottom:6px;}
-    .fc-range{font-size:10px;color:var(--muted);word-break:break-all;}
-    .fc-date{font-size:10px;color:var(--muted);margin-top:3px;}
-    .fc-meta{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.7;border-top:1px solid var(--border);padding-top:6px;}
+    .fc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 16px;}
+    .fc-label{font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:500;}
+    .fc-price{font-size:22px;font-weight:700;margin-bottom:4px;word-break:break-all;}
+    .fc-pct{font-size:15px;font-weight:700;margin-bottom:8px;}
+    .fc-range{font-size:12px;color:var(--muted);word-break:break-all;line-height:1.7;}
+    .fc-date{font-size:12px;color:var(--muted);margin-top:4px;}
+    .fc-meta{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.8;border-top:1px solid var(--border);padding-top:8px;}
 
     /* Chart */
-    .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:20px;}
-    .chart-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
-    .chart-title{font-size:14px;font-weight:600;}
-    .chart-meta{font-size:11px;color:var(--muted);text-align:right;}
-    .chart-wrap{position:relative;height:280px;}
-    @media(max-width:600px){.chart-wrap{height:220px;}}
-    .chart-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,17,23,.75);border-radius:8px;font-size:13px;color:var(--muted);gap:8px;}
-    .chart-note{font-size:11px;color:var(--muted);margin-top:10px;padding-top:8px;border-top:1px solid var(--border);line-height:1.6;}
+    .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:20px;}
+    .chart-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
+    .chart-title{font-size:16px;font-weight:700;}
+    .chart-meta{font-size:13px;color:var(--muted);text-align:right;}
+    .chart-wrap{position:relative;height:300px;}
+    @media(max-width:600px){.chart-wrap{height:240px;}}
+    .chart-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,17,23,.75);border-radius:8px;font-size:14px;color:var(--muted);gap:8px;}
+    .chart-note{font-size:13px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--border);line-height:1.8;}
     .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
     /* Table */
-    .tbl-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-    table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px;}
-    th{text-align:left;padding:7px 10px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
-    td{padding:10px;border-bottom:1px solid rgba(48,54,61,.4);white-space:nowrap;}
+    .tbl-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    table{width:100%;border-collapse:collapse;font-size:14px;min-width:700px;}
+    th{text-align:left;padding:9px 12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+    td{padding:12px;border-bottom:1px solid rgba(48,54,61,.4);white-space:nowrap;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:rgba(255,255,255,.02);}
-    @media(max-width:600px){table{font-size:12px;}th,td{padding:8px 6px;}}
+    @media(max-width:600px){table{font-size:13px;}th,td{padding:9px 8px;}}
 
     /* Confidence badge */
-    .conf-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;}
+    .conf-badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600;}
     .conf-high  {background:rgba(63,185,80,.15);  color:#3fb950; border:1px solid rgba(63,185,80,.3);}
     .conf-mid   {background:rgba(210,153,34,.15); color:#e3b341; border:1px solid rgba(210,153,34,.3);}
     .conf-low   {background:rgba(248,81,73,.15);  color:#f85149; border:1px solid rgba(248,81,73,.3);}
@@ -112,30 +114,30 @@
     .vol-vhigh  {color:#f85149;}
 
     /* Low-confidence warning band in forecast cards */
-    .fc-warn{margin-top:6px;padding:5px 8px;border-radius:6px;font-size:10px;font-weight:600;text-align:center;}
+    .fc-warn{margin-top:8px;padding:7px 10px;border-radius:6px;font-size:12px;font-weight:600;text-align:center;}
     .fc-warn.w-low{background:rgba(248,81,73,.12);color:#f85149;border:1px solid rgba(248,81,73,.3);}
     .fc-warn.w-vlow{background:rgba(139,148,158,.1);color:#8b949e;border:1px solid rgba(139,148,158,.3);}
 
     /* Interpret box */
-    #interpret-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;display:none;}
-    #interpret-box .interpret-title{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text);}
-    #interpret-box .interpret-text {font-size:13px;color:var(--muted);line-height:1.8;}
+    #interpret-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 22px;margin-bottom:20px;display:none;}
+    #interpret-box .interpret-title{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--text);}
+    #interpret-box .interpret-text {font-size:15px;color:var(--muted);line-height:1.9;}
 
     /* Header responsive */
     @media(max-width:500px){header{flex-wrap:wrap;gap:8px;}.logo h1{font-size:15px;}.hdr-right{gap:6px;}.badge{display:none;}}
     @media(max-width:600px){#model-info{padding:12px 14px;}}
 
     /* Summary bar */
-    .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:.2s;}
+    .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:.2s;}
     .sum-card:hover{border-color:var(--sc,var(--muted));}
-    .sum-cat{font-size:11px;font-weight:700;color:var(--sc,var(--muted));margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:4px;}
-    .sum-item{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;padding:1px 0;}
-    .sum-val{font-weight:600;color:var(--text);}
+    .sum-cat{font-size:13px;font-weight:700;color:var(--sc,var(--muted));margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:5px;}
+    .sum-item{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;padding:2px 0;}
+    .sum-val{font-weight:700;color:var(--text);}
     .sum-chg.up{color:var(--green);} .sum-chg.dn{color:var(--red);}
     @media(max-width:700px){#summary-grid{grid-template-columns:repeat(2,1fr);}}
     @media(max-width:400px){#summary-grid{grid-template-columns:repeat(1,1fr);}}
 
-    footer{text-align:center;padding:20px 16px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);margin-top:12px;line-height:1.8;}
+    footer{text-align:center;padding:20px 16px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:12px;line-height:1.9;}
     footer a{color:var(--muted);text-decoration:none;}
     footer a:hover{color:var(--text);}
   </style>
@@ -157,67 +159,6 @@
 </header>
 
 <main>
-
-  <!-- Model Credibility Banner -->
-  <div id="model-info" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;">
-    <div style="display:flex;align-items:flex-start;gap:12px;">
-      <span style="font-size:22px;line-height:1;">🧠</span>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text);">예측 모델 및 데이터 신뢰성 안내</div>
-        <div style="font-size:12px;color:#e3b341;margin-bottom:8px;font-weight:500;">
-          💡 본 서비스는 예측 가격보다 예측 범위, 과거 오차, 변동성 위험을 함께 해석하는 것을 권장합니다.
-        </div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.75;">
-          이 서비스는 Google Research가 개발한 <strong style="color:var(--text);">TimesFM 2.5</strong> (Time Series Foundation Model)을 사용합니다.
-          1,000억 개 이상의 실세계 시계열 포인트로 사전학습된 모델로, <strong style="color:var(--text);">별도 파인튜닝 없이(Zero-Shot)</strong> 예측합니다.
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px;">
-          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🪙 암호화폐 (BTC / ETH / XRP)</div>
-            <div style="font-size:12px;">데이터 출처: <strong>CoinGecko</strong></div>
-            <div style="font-size:12px;">분석 기간: 최근 <strong>365일</strong></div>
-            <div style="font-size:12px;">예측 컨텍스트: 최근 <strong>256일</strong> 종가 사용</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🇰🇷 한국 주식 · 지수 (삼성전자 외 2종 + KOSPI)</div>
-            <div style="font-size:12px;">데이터 출처: <strong>Yahoo Finance</strong></div>
-            <div style="font-size:12px;">분석 기간: 최근 <strong>1년 거래일</strong></div>
-            <div style="font-size:12px;">예측 컨텍스트: 최근 <strong>256일</strong> 종가 사용</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">💱 환율 (USD/KRW · JPY/KRW)</div>
-            <div style="font-size:12px;">데이터 출처: <strong>한국은행 ECOS API</strong></div>
-            <div style="font-size:12px;">분석 기간: 최근 <strong>2년 (ffill 보간)</strong></div>
-            <div style="font-size:12px;">주의: <strong>주말·공휴일은 전일값으로 대체</strong></div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🏢 아파트 실거래가 (서울·강남·노도강)</div>
-            <div style="font-size:12px;">데이터 출처: <strong>국토교통부 실거래가 공개시스템</strong></div>
-            <div style="font-size:12px;">분석 기간: 최근 <strong>36개월</strong></div>
-            <div style="font-size:12px;">단위: <strong>만원/㎡</strong> (IQR 이상치 제거 후 평균)</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">📊 소비자물가지수 (CPI)</div>
-            <div style="font-size:12px;">데이터 출처: <strong>한국은행 ECOS API</strong></div>
-            <div style="font-size:12px;">분석 기간: 최근 <strong>60개월</strong></div>
-            <div style="font-size:12px;">예측 주기: <strong>월별 (1·3·6·12개월)</strong></div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🤖 모델 정보</div>
-            <div style="font-size:12px;">모델: <strong>TimesFM 2.5 (200M 파라미터)</strong></div>
-            <div style="font-size:12px;">예측 방식: <strong>패턴 기반 통계 추론</strong></div>
-            <div style="font-size:12px;">신뢰 구간: <strong>10% ~ 90% 분위수</strong> 제공</div>
-          </div>
-        </div>
-        <div style="margin-top:10px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
-          ⚠️ <strong style="color:#e3b341;">한계:</strong>
-          이 모델은 <strong>과거 가격 패턴</strong>을 학습합니다.
-          뉴스, 규제, 기업 실적, 거시경제 등 <strong>외부 이벤트는 직접 반영하지 않습니다.</strong>
-          따라서 예측 결과는 단일 가격보다 <strong>범위와 신뢰도를 함께 해석</strong>해야 합니다.
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- 전체 요약 바 -->
   <div id="summary-bar" style="margin-bottom:16px;">
@@ -243,7 +184,6 @@
         <div class="sum-cat">💱 환율</div>
         <div class="sum-item" id="sum-USDKRW">USD/KRW <span class="sum-val">—</span></div>
         <div class="sum-item" id="sum-JPYKRW">JPY/KRW <span class="sum-val">—</span></div>
-        <div class="sum-item" style="color:var(--muted);font-size:10px;">한국은행 ECOS</div>
       </div>
       <div class="sum-card" onclick="switchCat('apt')" style="--sc:#8B5CF6">
         <div class="sum-cat">🏢 아파트</div>
@@ -330,14 +270,14 @@
   <div class="asset-grid exchange" id="grid-exchange" style="display:none">
     <div class="asset-card" data-sym="USDKRW" onclick="selectAsset('USDKRW')" style="--accent-color:#10B981">
       <div class="ac-symbol" style="color:#10B981">USD / KRW</div>
-      <div class="ac-name">미국 달러 · 원화 (한국은행 ECOS)</div>
+      <div class="ac-name">미국 달러 / 원화</div>
       <div class="ac-price" id="ap-USDKRW">—</div>
       <div class="ac-change" id="ac-USDKRW">—</div>
       <div class="ac-kf" id="akf-USDKRW"></div>
     </div>
     <div class="asset-card" data-sym="JPYKRW" onclick="selectAsset('JPYKRW')" style="--accent-color:#EF4444">
       <div class="ac-symbol" style="color:#EF4444">JPY / KRW</div>
-      <div class="ac-name">일본 엔 · 원화 100엔 (한국은행 ECOS)</div>
+      <div class="ac-name">일본 엔 / 원화 (100엔 기준)</div>
       <div class="ac-price" id="ap-JPYKRW">—</div>
       <div class="ac-change" id="ac-JPYKRW">—</div>
       <div class="ac-kf" id="akf-JPYKRW"></div>
@@ -373,21 +313,21 @@
   <div class="asset-grid cpi" id="grid-cpi" style="display:none">
     <div class="asset-card" data-sym="CPI-TOTAL" onclick="selectAsset('CPI-TOTAL')" style="--accent-color:#F97316">
       <div class="ac-symbol" style="color:#F97316">전체 CPI</div>
-      <div class="ac-name">소비자물가지수 전체 (한국은행)</div>
+      <div class="ac-name">소비자물가지수 전체</div>
       <div class="ac-price" id="ap-CPI-TOTAL">—</div>
       <div class="ac-change" id="ac-CPI-TOTAL">—</div>
       <div class="ac-kf" id="akf-CPI-TOTAL"></div>
     </div>
     <div class="asset-card" data-sym="CPI-FOOD" onclick="selectAsset('CPI-FOOD')" style="--accent-color:#EC4899">
       <div class="ac-symbol" style="color:#EC4899">식품 CPI</div>
-      <div class="ac-name">식품·비주류음료 물가 (한국은행)</div>
+      <div class="ac-name">식품·비주류음료 물가</div>
       <div class="ac-price" id="ap-CPI-FOOD">—</div>
       <div class="ac-change" id="ac-CPI-FOOD">—</div>
       <div class="ac-kf" id="akf-CPI-FOOD"></div>
     </div>
     <div class="asset-card" data-sym="CPI-HOUSING" onclick="selectAsset('CPI-HOUSING')" style="--accent-color:#14B8A6">
       <div class="ac-symbol" style="color:#14B8A6">주거 CPI</div>
-      <div class="ac-name">주거·수도·광열 물가 (한국은행)</div>
+      <div class="ac-name">주거·수도·광열 물가</div>
       <div class="ac-price" id="ap-CPI-HOUSING">—</div>
       <div class="ac-change" id="ac-CPI-HOUSING">—</div>
       <div class="ac-kf" id="akf-CPI-HOUSING"></div>
@@ -435,7 +375,7 @@
     </div>
   </div>
 
-  <!-- Table -->
+  <!-- 예측 데이터 테이블 -->
   <div class="tbl-box">
     <table>
       <thead>
@@ -462,6 +402,61 @@
       <span class="conf-badge conf-mid">50–69</span><span>제한적 참고</span>
       <span class="conf-badge conf-low">30–49</span><span>주의 필요</span>
       <span class="conf-badge conf-vlow">0–29</span><span>시나리오 참고 수준</span>
+    </div>
+  </div>
+
+  <!-- 예측 모델 및 데이터 신뢰성 안내 (하단) -->
+  <div id="model-info" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-top:24px;">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <span style="font-size:24px;line-height:1;">🧠</span>
+      <div style="flex:1;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text);">예측 모델 및 데이터 신뢰성 안내</div>
+        <div style="font-size:14px;color:#e3b341;margin-bottom:10px;font-weight:500;">
+          💡 본 서비스는 예측 가격보다 예측 범위, 과거 오차, 변동성 위험을 함께 해석하는 것을 권장합니다.
+        </div>
+        <div style="font-size:14px;color:var(--muted);line-height:1.85;margin-bottom:14px;">
+          이 서비스는 Google Research가 개발한 <strong style="color:var(--text);">TimesFM 2.5</strong> (Time Series Foundation Model)을 사용합니다.
+          1,000억 개 이상의 실세계 시계열 포인트로 사전학습된 모델로, <strong style="color:var(--text);">별도 파인튜닝 없이(Zero-Shot)</strong> 예측합니다.
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;">
+          <div style="background:var(--surface2);border-radius:8px;padding:12px 16px;">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">🪙 암호화폐 (BTC / ETH / XRP)</div>
+            <div style="font-size:14px;">데이터 출처: <strong>CoinGecko</strong></div>
+            <div style="font-size:14px;">분석 기간: 최근 <strong>365일</strong></div>
+            <div style="font-size:14px;">예측 컨텍스트: 최근 <strong>256일</strong> 종가</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:12px 16px;">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">🇰🇷 한국 주식 (삼성전자 외 2종 + KOSPI)</div>
+            <div style="font-size:14px;">데이터 출처: <strong>Yahoo Finance</strong></div>
+            <div style="font-size:14px;">분석 기간: 최근 <strong>1년 거래일</strong></div>
+            <div style="font-size:14px;">예측 컨텍스트: 최근 <strong>256일</strong> 종가</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:12px 16px;">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">💱 환율 · 📊 소비자물가 (CPI)</div>
+            <div style="font-size:14px;">데이터 출처: <strong>한국은행 ECOS API</strong></div>
+            <div style="font-size:14px;">환율 분석: 최근 <strong>2년 일별</strong> (주말은 전일값)</div>
+            <div style="font-size:14px;">물가 분석: 최근 <strong>60개월 · 월별 예측</strong></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:12px 16px;">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">🏢 아파트 실거래가 (서울·강남·노도강)</div>
+            <div style="font-size:14px;">데이터 출처: <strong>국토교통부 실거래가</strong></div>
+            <div style="font-size:14px;">분석 기간: 최근 <strong>36개월</strong></div>
+            <div style="font-size:14px;">단위: <strong>만원/㎡</strong> (IQR 이상치 제거 후 평균)</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:12px 16px;">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">🤖 모델 정보</div>
+            <div style="font-size:14px;">모델: <strong>TimesFM 2.5 (200M 파라미터)</strong></div>
+            <div style="font-size:14px;">예측 방식: <strong>패턴 기반 통계 추론</strong></div>
+            <div style="font-size:14px;">신뢰 구간: <strong>10% ~ 90% 분위수</strong> 제공</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:13px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;line-height:1.85;">
+          ⚠️ <strong style="color:#e3b341;">한계:</strong>
+          이 모델은 <strong>과거 가격 패턴</strong>을 학습합니다.
+          뉴스, 규제, 기업 실적, 거시경제 등 <strong>외부 이벤트는 직접 반영하지 않습니다.</strong>
+          따라서 예측 결과는 단일 가격보다 <strong>범위와 신뢰도를 함께 해석</strong>해야 합니다.
+        </div>
+      </div>
     </div>
   </div>
 
