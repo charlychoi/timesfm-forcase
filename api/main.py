@@ -42,9 +42,11 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 # ── 캐시 ──────────────────────────────────────────────────────────────────
 _model        = None
 _model_loaded = False
-_price_cache:    dict = {}
-_forecast_cache: dict = {}
-_backtest_cache: dict = {}
+_price_cache:       dict = {}
+_forecast_cache:    dict = {}
+_backtest_cache:    dict = {}
+_molit_call_cache:  dict = {}   # (lawd_cd, deal_ymd) → prices (12h TTL)
+_MOLIT_CALL_TTL = 43200         # 12시간
 
 # 자산 유형별 TTL (초)
 TTL = {
@@ -93,19 +95,19 @@ ASSETS = {
             "11305","11320","11350","11380","11410","11440","11470","11500",
             "11530","11545","11560","11590","11620","11650","11680","11710","11740",
         ],
-        "context_months": 36, "freq": "M", "horizons": _M, "horizon_labels": _ML,
+        "context_months": 24, "freq": "M", "horizons": _M, "horizon_labels": _ML,
     },
     "APT-GANGNAM": {
         "name": "강남3구 아파트", "color": "#F59E0B", "type": "apt",
         "id": "APT-GANGNAM", "currency": "KRW", "decimals": 0, "unit": "만원/㎡", "source": "molit",
         "lawd_cd_list": ["11680", "11650", "11710"],
-        "context_months": 36, "freq": "M", "horizons": _M, "horizon_labels": _ML,
+        "context_months": 24, "freq": "M", "horizons": _M, "horizon_labels": _ML,
     },
     "APT-NOWON": {
         "name": "노도강 아파트", "color": "#06B6D4", "type": "apt",
         "id": "APT-NOWON", "currency": "KRW", "decimals": 0, "unit": "만원/㎡", "source": "molit",
         "lawd_cd_list": ["11350", "11320", "11305"],
-        "context_months": 36, "freq": "M", "horizons": _M, "horizon_labels": _ML,
+        "context_months": 24, "freq": "M", "horizons": _M, "horizon_labels": _ML,
     },
     # ── 소비자물가지수 (한국은행 ECOS, 월별) ──────────────────────────────
     "CPI-TOTAL": {
@@ -335,12 +337,17 @@ def fetch_ecos_timeseries(
 
 # ── 국토교통부 MOLIT (아파트 실거래가) ────────────────────────────────────────
 def _fetch_one_district_month(lawd_cd: str, deal_ymd: str) -> list[float]:
-    """단일 법정동 + 월 아파트 거래 ㎡당 가격(만원) 목록"""
+    """단일 법정동 + 월 아파트 거래 ㎡당 가격(만원) 목록 (호출 단위 캐시 포함)"""
     if not MOLIT_API_KEY:
         return []
-    url = (
-        "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
-    )
+
+    cache_key = f"{lawd_cd}_{deal_ymd}"
+    now = time.time()
+    hit = _molit_call_cache.get(cache_key)
+    if hit and (now - hit["ts"]) < _MOLIT_CALL_TTL:
+        return hit["data"]
+
+    url = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
     params = {
         "serviceKey": MOLIT_API_KEY,
         "LAWD_CD":    lawd_cd,
@@ -351,11 +358,9 @@ def _fetch_one_district_month(lawd_cd: str, deal_ymd: str) -> list[float]:
     try:
         resp = http_requests.get(url, params=params, timeout=30)
         resp.raise_for_status()
-        root  = ET.fromstring(resp.text)
-        items = root.findall(".//item")
+        root   = ET.fromstring(resp.text)
         result = []
-        for item in items:
-            # 신규 API: dealAmount(만원), excluUseAr(㎡)
+        for item in root.findall(".//item"):
             price_s = (item.findtext("dealAmount") or item.findtext("거래금액") or "").replace(",", "").strip()
             area_s  = (item.findtext("excluUseAr") or item.findtext("전용면적") or "").strip()
             if price_s and area_s:
@@ -366,14 +371,15 @@ def _fetch_one_district_month(lawd_cd: str, deal_ymd: str) -> list[float]:
                         result.append(price / area)
                 except ValueError:
                     pass
+        _molit_call_cache[cache_key] = {"data": result, "ts": now}
         return result
     except Exception as e:
         print(f"[MOLIT] {lawd_cd} {deal_ymd} 오류: {e}")
         return []
 
 
-def fetch_apt_monthly_price(symbol: str, lawd_cd_list: list, months: int = 36) -> tuple[np.ndarray, float, float]:
-    """국토부 실거래가 API로 월별 ㎡당 평균가 수집"""
+def fetch_apt_monthly_price(symbol: str, lawd_cd_list: list, months: int = 24) -> tuple[np.ndarray, float, float]:
+    """국토부 실거래가 API — 전체 (구×월) 조합을 단일 ThreadPool로 병렬 수집"""
     if not MOLIT_API_KEY:
         raise HTTPException(
             status_code=503,
@@ -391,25 +397,37 @@ def fetch_apt_monthly_price(symbol: str, lawd_cd_list: list, months: int = 36) -
         total = today.year * 12 + today.month - 1 - i
         month_list.append(f"{total // 12}{total % 12 + 1:02d}")
 
+    # 모든 (lawd_cd, deal_ymd) 조합을 하나의 ThreadPool로 한 번에 병렬 처리
+    tasks = [(c, m) for m in month_list for c in lawd_cd_list]
+    total_tasks = len(tasks)
+    print(f"[MOLIT] {symbol}: {total_tasks}개 병렬 호출 시작 (workers=20)...")
+    t_start = time.time()
+    with ThreadPoolExecutor(max_workers=20) as ex:
+        raw = list(ex.map(lambda t: (t[1], _fetch_one_district_month(t[0], t[1])), tasks))
+    print(f"[MOLIT] {symbol}: 수집 완료 {time.time()-t_start:.1f}초")
+
+    # 월별 집계
+    month_data: dict[str, list] = {m: [] for m in month_list}
+    for deal_ymd, prices in raw:
+        month_data[deal_ymd].extend(prices)
+
     monthly_prices = []
     for deal_ymd in month_list:
-        with ThreadPoolExecutor(max_workers=5) as ex:
-            results = list(ex.map(lambda c: _fetch_one_district_month(c, deal_ymd), lawd_cd_list))
-        all_prices = [p for r in results for p in r]
+        all_prices = month_data[deal_ymd]
         if len(all_prices) >= 10:
             arr = np.array(all_prices)
             q1, q3 = np.percentile(arr, [25, 75])
-            iqr     = q3 - q1
-            filt    = arr[(arr >= q1 - 1.5 * iqr) & (arr <= q3 + 1.5 * iqr)]
+            iqr  = q3 - q1
+            filt = arr[(arr >= q1 - 1.5 * iqr) & (arr <= q3 + 1.5 * iqr)]
             monthly_prices.append(round(float(np.mean(filt)), 0) if len(filt) > 0 else None)
         else:
             monthly_prices.append(None)
-        time.sleep(0.1)
 
     # ffill None
     for i in range(1, len(monthly_prices)):
         if monthly_prices[i] is None and monthly_prices[i - 1] is not None:
             monthly_prices[i] = monthly_prices[i - 1]
+
     valid = [p for p in monthly_prices if p is not None]
     if len(valid) < 12:
         raise HTTPException(status_code=500, detail=f"유효 아파트 데이터 부족: {len(valid)}개월")
