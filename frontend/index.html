@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TimesFM Forecast — 암호화폐 & 한국 주식</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --border:#30363d;
+      --text:#e6edf3; --muted:#8b949e; --green:#3fb950; --red:#f85149; --r:12px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;}
+
+    /* Header */
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
+    .logo{display:flex;align-items:center;gap:10px;}
+    .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#6e40c9,#2ea043);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .logo h1{font-size:17px;font-weight:700;}
+    .logo p{font-size:11px;color:var(--muted);}
+    .hdr-right{display:flex;align-items:center;gap:10px;}
+    .badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--muted);}
+    #dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+    #dot.on{background:var(--green);box-shadow:0 0 6px var(--green);}
+
+    /* Main */
+    main{max-width:1200px;margin:0 auto;padding:20px 16px;}
+
+    /* Category tabs */
+    .cat-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+    .cat-tab{padding:8px 20px;background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:13px;color:var(--muted);transition:.2s;white-space:nowrap;}
+    .cat-tab:hover{color:var(--text);}
+    .cat-tab.active{background:var(--surface2);border-color:var(--text);color:var(--text);font-weight:600;}
+
+    /* Asset grid */
+    .asset-grid{display:grid;gap:10px;margin-bottom:20px;}
+    .asset-grid.crypto{grid-template-columns:repeat(3,1fr);}
+    .asset-grid.kr_stock{grid-template-columns:repeat(4,1fr);}
+    @media(max-width:900px){.asset-grid.kr_stock{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:600px){.asset-grid.crypto{grid-template-columns:repeat(3,1fr);}.asset-grid.kr_stock{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:400px){.asset-grid.crypto{grid-template-columns:repeat(1,1fr);}.asset-grid.kr_stock{grid-template-columns:repeat(1,1fr);}}
+
+    .asset-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:.2s;user-select:none;}
+    .asset-card:hover{border-color:var(--muted);}
+    .asset-card.selected{border-color:var(--accent-color,#fff);}
+    .ac-symbol{font-size:14px;font-weight:700;margin-bottom:2px;word-break:break-all;}
+    .ac-name{font-size:11px;color:var(--muted);}
+    .ac-price{font-size:14px;font-weight:700;margin-top:5px;word-break:break-all;}
+    .ac-change{font-size:11px;margin-top:2px;}
+    .up{color:var(--green);} .down{color:var(--red);}
+
+    /* Action row */
+    .action-row{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+    #btn-fc{padding:11px 20px;background:#238636;border:1px solid #2ea043;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s;white-space:nowrap;}
+    #btn-fc:hover{background:#2ea043;} #btn-fc:disabled{opacity:.5;cursor:not-allowed;}
+    #btn-all{padding:11px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;transition:.2s;white-space:nowrap;}
+    #btn-all:hover{border-color:var(--muted);} #btn-all:disabled{opacity:.5;cursor:not-allowed;}
+    #status-msg{font-size:12px;color:var(--muted);flex:1;min-width:0;word-break:break-all;}
+    @media(max-width:500px){.action-row{flex-direction:column;align-items:stretch;}#btn-fc,#btn-all{justify-content:center;}}
+
+    /* Error */
+    .err{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:8px;padding:14px;color:var(--red);font-size:13px;margin-bottom:16px;display:none;word-break:break-all;}
+
+    /* Key forecast cards */
+    .fc-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+    @media(max-width:700px){.fc-cards{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:360px){.fc-cards{grid-template-columns:repeat(1,1fr);}}
+    .fc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+    .fc-label{font-size:11px;color:var(--muted);margin-bottom:6px;}
+    .fc-price{font-size:18px;font-weight:700;margin-bottom:3px;word-break:break-all;}
+    .fc-pct{font-size:13px;font-weight:600;margin-bottom:6px;}
+    .fc-range{font-size:10px;color:var(--muted);word-break:break-all;}
+    .fc-date{font-size:10px;color:var(--muted);margin-top:3px;}
+
+    /* Chart */
+    .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:20px;}
+    .chart-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
+    .chart-title{font-size:14px;font-weight:600;}
+    .chart-meta{font-size:11px;color:var(--muted);text-align:right;}
+    .chart-wrap{position:relative;height:280px;}
+    @media(max-width:600px){.chart-wrap{height:220px;}}
+    .chart-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,17,23,.75);border-radius:8px;font-size:13px;color:var(--muted);gap:8px;}
+    .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* Table */
+    .tbl-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px;}
+    th{text-align:left;padding:7px 10px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+    td{padding:10px;border-bottom:1px solid rgba(48,54,61,.4);white-space:nowrap;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:rgba(255,255,255,.02);}
+    @media(max-width:600px){table{font-size:12px;}th,td{padding:8px 6px;}}
+
+    /* Header responsive */
+    @media(max-width:500px){header{flex-wrap:wrap;gap:8px;}.logo h1{font-size:15px;}.hdr-right{gap:6px;}.badge{display:none;}}
+
+    /* Model info responsive */
+    @media(max-width:600px){#model-info{padding:12px 14px;}}
+
+    footer{text-align:center;padding:20px 16px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);margin-top:12px;line-height:1.8;}
+    footer a{color:var(--muted);text-decoration:none;}
+    footer a:hover{color:var(--text);}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📈</div>
+    <div>
+      <h1>TimesFM Forecast</h1>
+      <p>암호화폐 & 한국 주식 AI 예측</p>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="badge">TimesFM 2.5 · Zero-Shot</span>
+    <div id="dot" title="API 상태"></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Model Credibility Banner -->
+  <div id="model-info" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <span style="font-size:22px;line-height:1;">🧠</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text);">예측 모델 및 데이터 신뢰성 안내</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.75;">
+          이 서비스는 Google Research가 개발한 <strong style="color:var(--text);">TimesFM 2.5</strong> (Time Series Foundation Model)을 사용합니다.
+          1,000억 개 이상의 실세계 시계열 포인트로 사전학습된 모델로, <strong style="color:var(--text);">별도 파인튜닝 없이(Zero-Shot)</strong> 예측합니다.
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px;">
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🪙 암호화폐 (BTC / ETH / XRP)</div>
+            <div style="font-size:12px;">데이터 출처: <strong>CoinGecko</strong></div>
+            <div style="font-size:12px;">분석 기간: <strong>2025-06-28 ~ 오늘</strong> (최근 365일)</div>
+            <div style="font-size:12px;">예측 컨텍스트: 최근 <strong>256일</strong> 종가 사용</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🇰🇷 한국 주식 · 지수 (삼성전자 외 2종 + KOSPI)</div>
+            <div style="font-size:12px;">데이터 출처: <strong>Yahoo Finance</strong></div>
+            <div style="font-size:12px;">분석 기간: <strong>2025-06-26 ~ 오늘</strong> (최근 244~245 거래일)</div>
+            <div style="font-size:12px;">예측 컨텍스트: 최근 <strong>244일</strong> 종가 사용</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🤖 모델 정보</div>
+            <div style="font-size:12px;">모델: <strong>TimesFM 2.5 (200M 파라미터)</strong></div>
+            <div style="font-size:12px;">예측 방식: <strong>패턴 기반 통계 추론</strong></div>
+            <div style="font-size:12px;">신뢰 구간: <strong>10% ~ 90% 분위수</strong> 제공</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
+          ⚠️ <strong style="color:#e3b341;">한계:</strong>
+          이 모델은 <strong>과거 가격 패턴</strong>만 학습합니다.
+          뉴스·규제·기업 실적·거시경제 등 <strong>외부 이벤트는 반영되지 않습니다.</strong>
+          예측 구간은 시간이 멀수록 넓어지며 불확실성이 커집니다.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category tabs -->
+  <div class="cat-tabs">
+    <div class="cat-tab active" data-cat="crypto"   onclick="switchCat('crypto')">🪙 암호화폐</div>
+    <div class="cat-tab"       data-cat="kr_stock" onclick="switchCat('kr_stock')">🇰🇷 한국 주식</div>
+  </div>
+
+  <!-- Asset grid — crypto -->
+  <div class="asset-grid crypto" id="grid-crypto">
+    <div class="asset-card" data-sym="BTC"    onclick="selectAsset('BTC')"    style="--accent-color:#F7931A">
+      <div class="ac-symbol" style="color:#F7931A">BTC</div>
+      <div class="ac-name">Bitcoin</div>
+      <div class="ac-price" id="ap-BTC">—</div>
+      <div class="ac-change" id="ac-BTC">—</div>
+    </div>
+    <div class="asset-card" data-sym="ETH"    onclick="selectAsset('ETH')"    style="--accent-color:#627EEA">
+      <div class="ac-symbol" style="color:#627EEA">ETH</div>
+      <div class="ac-name">Ethereum</div>
+      <div class="ac-price" id="ap-ETH">—</div>
+      <div class="ac-change" id="ac-ETH">—</div>
+    </div>
+    <div class="asset-card" data-sym="XRP"    onclick="selectAsset('XRP')"    style="--accent-color:#00AAE4">
+      <div class="ac-symbol" style="color:#00AAE4">XRP</div>
+      <div class="ac-name">XRP</div>
+      <div class="ac-price" id="ap-XRP">—</div>
+      <div class="ac-change" id="ac-XRP">—</div>
+    </div>
+  </div>
+
+  <!-- Asset grid — kr_stock (hidden by default) -->
+  <div class="asset-grid kr_stock" id="grid-kr_stock" style="display:none">
+    <div class="asset-card" data-sym="005930" onclick="selectAsset('005930')" style="--accent-color:#1428A0">
+      <div class="ac-symbol" style="color:#1428A0">005930</div>
+      <div class="ac-name">삼성전자</div>
+      <div class="ac-price" id="ap-005930">—</div>
+      <div class="ac-change" id="ac-005930">—</div>
+    </div>
+    <div class="asset-card" data-sym="000660" onclick="selectAsset('000660')" style="--accent-color:#0000C8">
+      <div class="ac-symbol" style="color:#0000C8">000660</div>
+      <div class="ac-name">SK하이닉스</div>
+      <div class="ac-price" id="ap-000660">—</div>
+      <div class="ac-change" id="ac-000660">—</div>
+    </div>
+    <div class="asset-card" data-sym="005380" onclick="selectAsset('005380')" style="--accent-color:#002C5F">
+      <div class="ac-symbol" style="color:#002C5F">005380</div>
+      <div class="ac-name">현대자동차</div>
+      <div class="ac-price" id="ap-005380">—</div>
+      <div class="ac-change" id="ac-005380">—</div>
+    </div>
+    <div class="asset-card" data-sym="KOSPI" onclick="selectAsset('KOSPI')" style="--accent-color:#E8343D">
+      <div class="ac-symbol" style="color:#E8343D">KOSPI</div>
+      <div class="ac-name">KOSPI 종합지수</div>
+      <div class="ac-price" id="ap-KOSPI">—</div>
+      <div class="ac-change" id="ac-KOSPI">—</div>
+    </div>
+  </div>
+
+  <!-- Action -->
+  <div class="action-row">
+    <button id="btn-fc"  onclick="runForecast()">🔮 <span id="btn-txt">예측 실행</span></button>
+    <button id="btn-all" onclick="runAll()">현재 카테고리 전체 예측</button>
+    <span id="status-msg">자산을 선택하고 예측을 실행하세요.</span>
+  </div>
+
+  <div class="err" id="err-msg"></div>
+
+  <!-- Key forecast cards -->
+  <div class="fc-cards">
+    <div class="fc-card" id="card-d1"><div class="fc-label">1일 후</div><div class="fc-price" style="color:var(--muted)">—</div></div>
+    <div class="fc-card" id="card-d7"><div class="fc-label">7일 후</div><div class="fc-price" style="color:var(--muted)">—</div></div>
+    <div class="fc-card" id="card-d14"><div class="fc-label">14일 후</div><div class="fc-price" style="color:var(--muted)">—</div></div>
+    <div class="fc-card" id="card-d30"><div class="fc-label">30일 후</div><div class="fc-price" style="color:var(--muted)">—</div></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-box">
+    <div class="chart-hdr">
+      <div class="chart-title" id="chart-title">예측 차트</div>
+      <div class="chart-meta" id="chart-meta">예측 실행 후 표시</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="priceChart"></canvas>
+      <div class="chart-loading" id="chart-loading">
+        <div class="spinner"></div>
+        <span id="loading-txt">TimesFM 추론 중...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="tbl-box">
+    <table>
+      <thead>
+        <tr>
+          <th>예측일</th><th>날짜</th><th>예측 가격</th>
+          <th>변화율</th><th>10% 하한</th><th>90% 상한</th>
+        </tr>
+      </thead>
+      <tbody id="fc-tbody">
+        <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">예측 실행 후 표시됩니다</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- Disclaimer -->
+<div style="max-width:1200px;margin:0 auto 0;padding:0 16px 24px;">
+  <div style="background:rgba(248,81,73,0.06);border:1px solid rgba(248,81,73,0.25);border-radius:var(--r);padding:18px 20px;">
+    <div style="font-size:13px;font-weight:700;color:#f85149;margin-bottom:8px;">⚠️ 면책 사항 (Disclaimer)</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.8;">
+      본 서비스에서 제공하는 모든 가격 예측 결과는 <strong style="color:var(--text);">AI 모델(TimesFM 2.5)이 과거 시계열 데이터를 분석한 통계적 추정치</strong>이며,
+      투자 권유·매수·매도 추천이 아닙니다.
+      <br>
+      예측 결과는 <strong style="color:var(--text);">실제 미래 가격을 보장하지 않으며</strong>, 시장 상황·뉴스·정책·기업 이슈 등
+      다양한 외부 요인에 의해 실제 가격은 예측과 크게 다를 수 있습니다.
+      <br>
+      암호화폐 및 주식 투자는 <strong style="color:#f85149;">원금 손실 위험</strong>이 있으며, 모든 투자 결정과 그 결과에 대한 책임은
+      전적으로 투자자 본인에게 있습니다.
+      본 서비스 제공자는 예측 정보를 근거로 한 투자 손실에 대해 <strong style="color:var(--text);">어떠한 법적·재정적 책임도 지지 않습니다.</strong>
+      <br><br>
+      <span style="color:var(--muted);font-size:11px;">
+        데이터 출처: CoinGecko (암호화폐), Yahoo Finance (한국 주식) ·
+        모델: Google Research TimesFM 2.5 ·
+        본 서비스는 Google의 공식 제품이 아닙니다.
+      </span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Powered by <a href="https://github.com/google-research/timesfm" target="_blank">Google TimesFM 2.5</a> ·
+  암호화폐: <a href="https://www.coingecko.com" target="_blank">CoinGecko</a> ·
+  주식: <a href="https://finance.yahoo.com" target="_blank">Yahoo Finance</a><br>
+  <span style="margin-top:6px;display:block">Made by <a href="https://www.youtube.com/@CharlyChoi/" target="_blank">Charly Choi</a></span>
+</footer>
+
+<script>
+const API = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? 'http://localhost:8000' : '';
+
+let currentSym = 'BTC';
+let currentCat = 'crypto';
+let chart = null;
+const cache = {};
+
+const CAT_SYMS = {
+  crypto:   ['BTC','ETH','XRP'],
+  kr_stock: ['005930','000660','005380','KOSPI'],
+};
+
+// ── 초기화 ────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  checkHealth();
+  selectAsset('BTC');
+});
+
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/api/health`, {signal:AbortSignal.timeout(5000)});
+    if (r.ok) document.getElementById('dot').classList.add('on');
+  } catch {}
+}
+
+// ── 카테고리 전환 ──────────────────────────────────────────────────────────
+function switchCat(cat) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  document.getElementById('grid-crypto').style.display   = cat==='crypto'   ? 'grid' : 'none';
+  document.getElementById('grid-kr_stock').style.display = cat==='kr_stock' ? 'grid' : 'none';
+  const first = CAT_SYMS[cat][0];
+  selectAsset(first);
+}
+
+// ── 자산 선택 ─────────────────────────────────────────────────────────────
+function selectAsset(sym) {
+  currentSym = sym;
+  document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('selected'));
+  const card = document.querySelector(`[data-sym="${sym}"]`);
+  if (card) card.classList.add('selected');
+  document.getElementById('status-msg').textContent = `${sym} 선택됨`;
+  if (cache[sym]) { renderResult(cache[sym]); setStatusMsg(cache[sym]); }
+  else clearCards();
+}
+
+// ── 예측 실행 ─────────────────────────────────────────────────────────────
+async function runForecast() { await doForecast(currentSym); }
+
+async function runAll() {
+  const syms = CAT_SYMS[currentCat];
+  const btnAll = document.getElementById('btn-all');
+  const btnFc  = document.getElementById('btn-fc');
+  btnAll.disabled = btnFc.disabled = true;
+  for (const [i, sym] of syms.entries()) {
+    selectAsset(sym);
+    document.getElementById('status-msg').textContent = `(${i+1}/${syms.length}) ${sym} 예측 중...`;
+    await doForecast(sym, true);
+    if (i < syms.length - 1) {
+      document.getElementById('status-msg').textContent = `${sym} 완료 — 다음 요청까지 2초 대기...`;
+      await sleep(2000);
+    }
+  }
+  selectAsset(currentSym);
+  btnAll.disabled = btnFc.disabled = false;
+  document.getElementById('status-msg').textContent = '전체 예측 완료';
+}
+
+async function doForecast(sym, silent=false) {
+  const btnFc   = document.getElementById('btn-fc');
+  const loading = document.getElementById('chart-loading');
+  const errMsg  = document.getElementById('err-msg');
+  btnFc.disabled = true;
+  document.getElementById('btn-txt').textContent = '예측 중...';
+  loading.style.display = 'flex';
+  errMsg.style.display  = 'none';
+
+  try {
+    const r = await fetch(`${API}/api/forecast/${sym}`, {signal:AbortSignal.timeout(180000)});
+    if (!r.ok) { const e=await r.json(); throw new Error(e.detail||'서버 오류'); }
+    const data = await r.json();
+    cache[sym] = data;
+    updateCard(sym, data);
+    if (!silent || sym===currentSym) { renderResult(data); setStatusMsg(data); }
+  } catch(e) {
+    let msg = e.message||'알 수 없는 오류';
+    if (msg.includes('429'))            msg = 'API 요청 한도 초과 (429). 잠시 후 재시도하세요.';
+    if (msg.includes('Failed to fetch')) msg = '서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.';
+    errMsg.textContent = `오류: ${msg}`;
+    errMsg.style.display = 'block';
+    document.getElementById('status-msg').textContent = '예측 실패 — 잠시 후 재시도하세요.';
+  } finally {
+    loading.style.display = 'none';
+    btnFc.disabled = false;
+    document.getElementById('btn-txt').textContent = '예측 실행';
+  }
+}
+
+// ── 렌더링 ────────────────────────────────────────────────────────────────
+function renderResult(data) {
+  renderCards(data);
+  renderChart(data);
+  renderTable(data);
+  document.getElementById('chart-title').textContent = `${data.name} (${data.symbol}) 30일 예측`;
+  document.getElementById('chart-meta').textContent  = 'TimesFM 2.5 Zero-Shot · 과거 90일 + 향후 30일';
+}
+
+function updateCard(sym, data) {
+  const priceEl  = document.getElementById(`ap-${sym}`);
+  const changeEl = document.getElementById(`ac-${sym}`);
+  if (priceEl)  priceEl.textContent  = fmtPrice(data.currency, data.current_price, data.symbol);
+  if (changeEl) {
+    const s = data.change_24h >= 0 ? '+' : '';
+    changeEl.className = `ac-change ${data.change_24h>=0?'up':'down'}`;
+    changeEl.textContent = `${s}${data.change_24h}%`;
+  }
+}
+
+function renderCards(data) {
+  const c = data.color;
+  for (const d of [1,7,14,30]) {
+    const kf = data.key_forecasts[`d${d}`];
+    const s  = kf.pct_change>=0?'+':'';
+    const cl = kf.pct_change>=0?'up':'down';
+    document.getElementById(`card-d${d}`).innerHTML = `
+      <div class="fc-label">${d}일 후</div>
+      <div class="fc-price" style="color:${c}">${fmtPrice(data.currency,kf.price,data.symbol)}</div>
+      <div class="fc-pct ${cl}">${s}${kf.pct_change}%</div>
+      <div class="fc-range">범위: ${fmtPrice(data.currency,kf.q10,data.symbol)} ~ ${fmtPrice(data.currency,kf.q90,data.symbol)}</div>
+      <div class="fc-date">${kf.date}</div>
+    `;
+  }
+}
+
+function renderChart(data) {
+  const c   = data.color;
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  const hLen = data.history_prices.length;
+  const allLabels = [...data.history_dates.map(d=>d.slice(5)), ...data.forecast_dates.map(d=>d.slice(5))];
+
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: allLabels,
+      datasets: [
+        {
+          label: '실제 가격',
+          data: [...data.history_prices, ...Array(30).fill(null)],
+          borderColor: '#58a6ff', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false,
+        },
+        {
+          label: 'TimesFM 예측',
+          data: [...Array(hLen).fill(null), ...data.forecast_prices],
+          borderColor: c, borderWidth: 2.5, borderDash:[6,3], pointRadius: 0, tension: 0.3, fill: false,
+        },
+        {
+          label: '90% 상한',
+          data: [...Array(hLen).fill(null), ...data.q90],
+          borderColor: 'transparent', backgroundColor: `${c}22`, borderWidth: 0,
+          pointRadius: 0, fill: '+1', tension: 0.3,
+        },
+        {
+          label: '10% 하한',
+          data: [...Array(hLen).fill(null), ...data.q10],
+          borderColor: 'transparent', backgroundColor: `${c}22`, borderWidth: 0,
+          pointRadius: 0, fill: false, tension: 0.3,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: {mode:'index', intersect:false},
+      plugins: {
+        legend: {labels:{color:'#8b949e',boxWidth:12,font:{size:11}}},
+        tooltip: {
+          backgroundColor:'#161b22', borderColor:'#30363d', borderWidth:1,
+          titleColor:'#e6edf3', bodyColor:'#8b949e',
+          callbacks: {
+            label: ctx => ctx.parsed.y==null ? null : ` ${ctx.dataset.label}: ${fmtPrice(data.currency,ctx.parsed.y,data.symbol)}`
+          }
+        }
+      },
+      scales: {
+        x: {ticks:{color:'#8b949e',maxTicksLimit:10,font:{size:10}}, grid:{color:'rgba(48,54,61,.4)'}},
+        y: {ticks:{color:'#8b949e',font:{size:10},callback:v=>fmtPrice(data.currency,v,data.symbol)}, grid:{color:'rgba(48,54,61,.4)'}},
+      }
+    },
+    plugins: [{
+      id:'divider',
+      afterDraw(ch) {
+        const meta = ch.getDatasetMeta(0);
+        const pt   = meta.data[hLen-1];
+        if (!pt) return;
+        const {top,bottom} = ch.chartArea;
+        const cx2 = ch.ctx;
+        cx2.save();
+        cx2.beginPath(); cx2.moveTo(pt.x,top); cx2.lineTo(pt.x,bottom);
+        cx2.strokeStyle='rgba(139,148,158,.5)'; cx2.lineWidth=1.5; cx2.setLineDash([4,4]); cx2.stroke();
+        cx2.fillStyle='#8b949e'; cx2.font='10px sans-serif'; cx2.fillText('오늘',pt.x+4,top+12);
+        cx2.restore();
+      }
+    }]
+  });
+}
+
+function renderTable(data) {
+  const c = data.color;
+  let html = '';
+  for (const d of [1,7,14,30]) {
+    const kf = data.key_forecasts[`d${d}`];
+    const s  = kf.pct_change>=0?'+':'';
+    const cl = kf.pct_change>=0?'up':'down';
+    html += `<tr>
+      <td><strong>${d}일 후</strong></td>
+      <td style="color:var(--muted)">${kf.date}</td>
+      <td style="color:${c};font-weight:600">${fmtPrice(data.currency,kf.price,data.symbol)}</td>
+      <td class="${cl}" style="font-weight:600">${s}${kf.pct_change}%</td>
+      <td style="color:var(--muted)">${fmtPrice(data.currency,kf.q10,data.symbol)}</td>
+      <td style="color:var(--muted)">${fmtPrice(data.currency,kf.q90,data.symbol)}</td>
+    </tr>`;
+  }
+  document.getElementById('fc-tbody').innerHTML = html;
+}
+
+function clearCards() {
+  for (const d of [1,7,14,30])
+    document.getElementById(`card-d${d}`).innerHTML = `<div class="fc-label">${d}일 후</div><div class="fc-price" style="color:var(--muted)">—</div>`;
+  document.getElementById('fc-tbody').innerHTML =
+    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">예측 실행 후 표시됩니다</td></tr>';
+}
+
+function setStatusMsg(data) {
+  const tag = data.cached ? ` 🗂 캐시 (${data.cache_age_sec}초 전)` : '';
+  document.getElementById('status-msg').textContent =
+    `${data.symbol} 예측 완료 (${data.elapsed_sec}s)${tag} · ${new Date(data.generated_at).toLocaleString('ko-KR')}`;
+}
+
+// ── 포맷 유틸 ─────────────────────────────────────────────────────────────
+function fmtPrice(currency, price, symbol) {
+  if (price==null||isNaN(price)) return '—';
+  if (currency==='KRW') {
+    // KOSPI 지수는 단위 없이 숫자만
+    if (symbol==='KOSPI') return price.toLocaleString('ko-KR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    return price.toLocaleString('ko-KR')+'원';
+  }
+  if (price < 10)  return '$'+price.toFixed(4);
+  if (price < 100) return '$'+price.toFixed(2);
+  return '$'+price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+}
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+</script>
+</body>
+</html>
