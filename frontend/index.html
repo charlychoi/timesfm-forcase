@@ -48,6 +48,7 @@
     .ac-name{font-size:11px;color:var(--muted);}
     .ac-price{font-size:14px;font-weight:700;margin-top:5px;word-break:break-all;}
     .ac-change{font-size:11px;margin-top:2px;}
+    .ac-kf{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.7;border-top:1px solid var(--border);padding-top:5px;min-height:14px;}
     .up{color:var(--green);} .down{color:var(--red);}
 
     /* Action row */
@@ -72,6 +73,7 @@
     .fc-pct{font-size:13px;font-weight:600;margin-bottom:6px;}
     .fc-range{font-size:10px;color:var(--muted);word-break:break-all;}
     .fc-date{font-size:10px;color:var(--muted);margin-top:3px;}
+    .fc-meta{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.7;border-top:1px solid var(--border);padding-top:6px;}
 
     /* Chart */
     .chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:20px;}
@@ -81,22 +83,38 @@
     .chart-wrap{position:relative;height:280px;}
     @media(max-width:600px){.chart-wrap{height:220px;}}
     .chart-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,17,23,.75);border-radius:8px;font-size:13px;color:var(--muted);gap:8px;}
+    .chart-note{font-size:11px;color:var(--muted);margin-top:10px;padding-top:8px;border-top:1px solid var(--border);line-height:1.6;}
     .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
     /* Table */
     .tbl-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-    table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px;}
+    table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px;}
     th{text-align:left;padding:7px 10px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
     td{padding:10px;border-bottom:1px solid rgba(48,54,61,.4);white-space:nowrap;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:rgba(255,255,255,.02);}
     @media(max-width:600px){table{font-size:12px;}th,td{padding:8px 6px;}}
 
+    /* Confidence badge */
+    .conf-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;}
+    .conf-high  {background:rgba(63,185,80,.15);  color:#3fb950; border:1px solid rgba(63,185,80,.3);}
+    .conf-mid   {background:rgba(210,153,34,.15); color:#e3b341; border:1px solid rgba(210,153,34,.3);}
+    .conf-low   {background:rgba(248,81,73,.15);  color:#f85149; border:1px solid rgba(248,81,73,.3);}
+    .conf-vlow  {background:rgba(139,148,158,.1); color:#8b949e; border:1px solid rgba(139,148,158,.3);}
+
+    /* Volatility badge */
+    .vol-badge  {font-size:10px;color:var(--muted);}
+    .vol-high   {color:#e3b341;}
+    .vol-vhigh  {color:#f85149;}
+
+    /* Interpret box */
+    #interpret-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;display:none;}
+    #interpret-box .interpret-title{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text);}
+    #interpret-box .interpret-text {font-size:13px;color:var(--muted);line-height:1.8;}
+
     /* Header responsive */
     @media(max-width:500px){header{flex-wrap:wrap;gap:8px;}.logo h1{font-size:15px;}.hdr-right{gap:6px;}.badge{display:none;}}
-
-    /* Model info responsive */
     @media(max-width:600px){#model-info{padding:12px 14px;}}
 
     footer{text-align:center;padding:20px 16px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);margin-top:12px;line-height:1.8;}
@@ -127,7 +145,10 @@
     <div style="display:flex;align-items:flex-start;gap:12px;">
       <span style="font-size:22px;line-height:1;">🧠</span>
       <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text);">예측 모델 및 데이터 신뢰성 안내</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--text);">예측 모델 및 데이터 신뢰성 안내</div>
+        <div style="font-size:12px;color:#e3b341;margin-bottom:8px;font-weight:500;">
+          💡 본 서비스는 예측 가격보다 예측 범위, 과거 오차, 변동성 위험을 함께 해석하는 것을 권장합니다.
+        </div>
         <div style="font-size:12px;color:var(--muted);line-height:1.75;">
           이 서비스는 Google Research가 개발한 <strong style="color:var(--text);">TimesFM 2.5</strong> (Time Series Foundation Model)을 사용합니다.
           1,000억 개 이상의 실세계 시계열 포인트로 사전학습된 모델로, <strong style="color:var(--text);">별도 파인튜닝 없이(Zero-Shot)</strong> 예측합니다.
@@ -136,14 +157,14 @@
           <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
             <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🪙 암호화폐 (BTC / ETH / XRP)</div>
             <div style="font-size:12px;">데이터 출처: <strong>CoinGecko</strong></div>
-            <div style="font-size:12px;">분석 기간: <strong>2025-06-28 ~ 오늘</strong> (최근 365일)</div>
+            <div style="font-size:12px;">분석 기간: 최근 <strong>365일</strong></div>
             <div style="font-size:12px;">예측 컨텍스트: 최근 <strong>256일</strong> 종가 사용</div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
             <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🇰🇷 한국 주식 · 지수 (삼성전자 외 2종 + KOSPI)</div>
             <div style="font-size:12px;">데이터 출처: <strong>Yahoo Finance</strong></div>
-            <div style="font-size:12px;">분석 기간: <strong>2025-06-26 ~ 오늘</strong> (최근 244~245 거래일)</div>
-            <div style="font-size:12px;">예측 컨텍스트: 최근 <strong>244일</strong> 종가 사용</div>
+            <div style="font-size:12px;">분석 기간: 최근 <strong>1년 거래일</strong></div>
+            <div style="font-size:12px;">예측 컨텍스트: 최근 <strong>256일</strong> 종가 사용</div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;">
             <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🤖 모델 정보</div>
@@ -154,9 +175,9 @@
         </div>
         <div style="margin-top:10px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">
           ⚠️ <strong style="color:#e3b341;">한계:</strong>
-          이 모델은 <strong>과거 가격 패턴</strong>만 학습합니다.
-          뉴스·규제·기업 실적·거시경제 등 <strong>외부 이벤트는 반영되지 않습니다.</strong>
-          예측 구간은 시간이 멀수록 넓어지며 불확실성이 커집니다.
+          이 모델은 <strong>과거 가격 패턴</strong>을 학습합니다.
+          뉴스, 규제, 기업 실적, 거시경제 등 <strong>외부 이벤트는 직접 반영하지 않습니다.</strong>
+          따라서 예측 결과는 단일 가격보다 <strong>범위와 신뢰도를 함께 해석</strong>해야 합니다.
         </div>
       </div>
     </div>
@@ -175,18 +196,21 @@
       <div class="ac-name">Bitcoin</div>
       <div class="ac-price" id="ap-BTC">—</div>
       <div class="ac-change" id="ac-BTC">—</div>
+      <div class="ac-kf" id="akf-BTC"></div>
     </div>
     <div class="asset-card" data-sym="ETH"    onclick="selectAsset('ETH')"    style="--accent-color:#627EEA">
       <div class="ac-symbol" style="color:#627EEA">ETH</div>
       <div class="ac-name">Ethereum</div>
       <div class="ac-price" id="ap-ETH">—</div>
       <div class="ac-change" id="ac-ETH">—</div>
+      <div class="ac-kf" id="akf-ETH"></div>
     </div>
     <div class="asset-card" data-sym="XRP"    onclick="selectAsset('XRP')"    style="--accent-color:#00AAE4">
       <div class="ac-symbol" style="color:#00AAE4">XRP</div>
       <div class="ac-name">XRP</div>
       <div class="ac-price" id="ap-XRP">—</div>
       <div class="ac-change" id="ac-XRP">—</div>
+      <div class="ac-kf" id="akf-XRP"></div>
     </div>
   </div>
 
@@ -197,24 +221,28 @@
       <div class="ac-name">삼성전자</div>
       <div class="ac-price" id="ap-005930">—</div>
       <div class="ac-change" id="ac-005930">—</div>
+      <div class="ac-kf" id="akf-005930"></div>
     </div>
     <div class="asset-card" data-sym="000660" onclick="selectAsset('000660')" style="--accent-color:#0000C8">
       <div class="ac-symbol" style="color:#0000C8">000660</div>
       <div class="ac-name">SK하이닉스</div>
       <div class="ac-price" id="ap-000660">—</div>
       <div class="ac-change" id="ac-000660">—</div>
+      <div class="ac-kf" id="akf-000660"></div>
     </div>
     <div class="asset-card" data-sym="005380" onclick="selectAsset('005380')" style="--accent-color:#002C5F">
       <div class="ac-symbol" style="color:#002C5F">005380</div>
       <div class="ac-name">현대자동차</div>
       <div class="ac-price" id="ap-005380">—</div>
       <div class="ac-change" id="ac-005380">—</div>
+      <div class="ac-kf" id="akf-005380"></div>
     </div>
     <div class="asset-card" data-sym="KOSPI" onclick="selectAsset('KOSPI')" style="--accent-color:#E8343D">
       <div class="ac-symbol" style="color:#E8343D">KOSPI</div>
       <div class="ac-name">KOSPI 종합지수</div>
       <div class="ac-price" id="ap-KOSPI">—</div>
       <div class="ac-change" id="ac-KOSPI">—</div>
+      <div class="ac-kf" id="akf-KOSPI"></div>
     </div>
   </div>
 
@@ -235,6 +263,12 @@
     <div class="fc-card" id="card-d30"><div class="fc-label">30일 후</div><div class="fc-price" style="color:var(--muted)">—</div></div>
   </div>
 
+  <!-- AI 예측 해석 박스 -->
+  <div id="interpret-box">
+    <div class="interpret-title">🤖 AI 예측 해석 (7일 기준)</div>
+    <div class="interpret-text" id="interpret-text">—</div>
+  </div>
+
   <!-- Chart -->
   <div class="chart-box">
     <div class="chart-hdr">
@@ -248,6 +282,9 @@
         <span id="loading-txt">TimesFM 추론 중...</span>
       </div>
     </div>
+    <div class="chart-note" id="chart-note" style="display:none;">
+      📌 예측 범위가 넓을수록 불확실성이 큽니다. 중앙 예측선보다 예측 범위와 변동성 경고를 함께 확인하세요.
+    </div>
   </div>
 
   <!-- Table -->
@@ -255,12 +292,20 @@
     <table>
       <thead>
         <tr>
-          <th>예측일</th><th>날짜</th><th>예측 가격</th>
-          <th>변화율</th><th>10% 하한</th><th>90% 상한</th>
+          <th>예측일</th>
+          <th>날짜</th>
+          <th>예측 가격</th>
+          <th>변화율</th>
+          <th>10% 하한</th>
+          <th>90% 상한</th>
+          <th>신뢰도</th>
+          <th>백테스트 오차</th>
+          <th>방향성 적중률</th>
+          <th>변동성</th>
         </tr>
       </thead>
       <tbody id="fc-tbody">
-        <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">예측 실행 후 표시됩니다</td></tr>
+        <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">예측 실행 후 표시됩니다</td></tr>
       </tbody>
     </table>
   </div>
@@ -299,11 +344,10 @@
 </footer>
 
 <script>
-const IS_LOCAL = location.hostname==='localhost' || location.hostname==='127.0.0.1';
-// Railway 백엔드 URL (배포 시 자동 사용)
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const RAILWAY_API = 'https://api-production-3fc2.up.railway.app';
 const API = IS_LOCAL ? 'http://localhost:8000' : (window.__API_URL__ || RAILWAY_API);
-const NO_BACKEND = false; // Railway 백엔드 연결됨
+const NO_BACKEND = false;
 
 let currentSym = 'BTC';
 let currentCat = 'crypto';
@@ -311,9 +355,38 @@ let chart = null;
 const cache = {};
 
 const CAT_SYMS = {
-  crypto:   ['BTC','ETH','XRP'],
-  kr_stock: ['005930','000660','005380','KOSPI'],
+  crypto:   ['BTC', 'ETH', 'XRP'],
+  kr_stock: ['005930', '000660', '005380', 'KOSPI'],
 };
+
+// ── safeFetchJson ─────────────────────────────────────────────────────────
+async function safeFetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  const contentType = response.headers.get('content-type') || '';
+  const text = await response.text();
+  if (!response.ok) {
+    // JSON 에러 본문이면 detail 추출
+    if (contentType.includes('application/json')) {
+      try {
+        const errBody = JSON.parse(text);
+        throw new Error(errBody.detail || `API 요청 실패: ${response.status} ${response.statusText}`);
+      } catch (e2) {
+        if (e2.message.includes('API 요청 실패') || e2.message === text) throw e2;
+      }
+    }
+    throw new Error(`API 요청 실패: ${response.status} ${response.statusText}`);
+  }
+  if (!contentType.includes('application/json')) {
+    console.error('Non-JSON response:', text.slice(0, 300));
+    throw new Error('API 서버가 JSON이 아닌 응답을 반환했습니다. 서버 경로 또는 프록시 설정을 확인하세요.');
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('JSON parse error:', text.slice(0, 300));
+    throw new Error('API 응답을 JSON으로 해석할 수 없습니다.');
+  }
+}
 
 // ── 초기화 ────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -323,49 +396,25 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function showNoBackendBanner() {
-  // 액션 버튼 비활성화
   document.getElementById('btn-fc').disabled = true;
   document.getElementById('btn-all').disabled = true;
-
-  // 배너 삽입
   const banner = document.createElement('div');
   banner.id = 'no-backend-banner';
   banner.innerHTML = `
-    <div style="
-      background:rgba(210,153,34,0.12);
-      border:1px solid rgba(210,153,34,0.4);
-      border-radius:12px;
-      padding:16px 20px;
-      margin-bottom:20px;
-      font-size:13px;
-      line-height:1.8;
-    ">
+    <div style="background:rgba(210,153,34,0.12);border:1px solid rgba(210,153,34,0.4);border-radius:12px;padding:16px 20px;margin-bottom:20px;font-size:13px;line-height:1.8;">
       <div style="font-weight:700;color:#e3b341;margin-bottom:6px;">🚧 백엔드 서버 연결 필요</div>
       <div style="color:#c9d1d9;">
-        이 페이지는 <strong>UI 펙</strong>다. 실제 예측을 실행하려면 
-        <strong>TimesFM Python 백엔드 서버</strong>를 실행해야 합니다.<br>
-        <br>
-        <strong>💻 로컈에서 실행하는 방법:</strong><br>
-        <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:12px;">
-          git clone https://github.com/charlychoi/timesfm-forcase.git<br>
-          cd timesfm-forcase &amp;&amp; pip install -r requirements.txt<br>
-          cd api &amp;&amp; uvicorn main:app --port 8000
-        </code><br>
-        <br>
-        그리고 및 브라우저에서 <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">http://localhost:8000</code> 접속.<br>
-        <br>
-        <span style="color:#8b949e;font-size:11px;">ℹ️ TimesFM(torch 315MB)이 Vercel 서버리스 용량(250MB)을 초과하여 백엔드는 로컈 또는 별도 서버(Railway/Render)에서 실행해야 합니다.</span>
+        실제 예측을 실행하려면 <strong>TimesFM Python 백엔드 서버</strong>를 실행해야 합니다.<br>
+        <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:12px;">cd api &amp;&amp; uvicorn main:app --port 8000</code>
       </div>
-    </div>
-  `;
-  // cat-tabs 앞에 삽입
+    </div>`;
   const catTabs = document.querySelector('.cat-tabs');
   catTabs.parentNode.insertBefore(banner, catTabs);
 }
 
 async function checkHealth() {
   try {
-    const r = await fetch(`${API}/api/health`, {signal:AbortSignal.timeout(5000)});
+    const r = await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(5000) });
     if (r.ok) document.getElementById('dot').classList.add('on');
   } catch {}
 }
@@ -374,8 +423,8 @@ async function checkHealth() {
 function switchCat(cat) {
   currentCat = cat;
   document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
-  document.getElementById('grid-crypto').style.display   = cat==='crypto'   ? 'grid' : 'none';
-  document.getElementById('grid-kr_stock').style.display = cat==='kr_stock' ? 'grid' : 'none';
+  document.getElementById('grid-crypto').style.display   = cat === 'crypto'   ? 'grid' : 'none';
+  document.getElementById('grid-kr_stock').style.display = cat === 'kr_stock' ? 'grid' : 'none';
   const first = CAT_SYMS[cat][0];
   selectAsset(first);
 }
@@ -413,7 +462,7 @@ async function runAll() {
   document.getElementById('status-msg').textContent = '전체 예측 완료';
 }
 
-async function doForecast(sym, silent=false) {
+async function doForecast(sym, silent = false) {
   const btnFc   = document.getElementById('btn-fc');
   const loading = document.getElementById('chart-loading');
   const errMsg  = document.getElementById('err-msg');
@@ -423,23 +472,19 @@ async function doForecast(sym, silent=false) {
   errMsg.style.display  = 'none';
 
   try {
-    const r = await fetch(`${API}/api/forecast/${sym}`, {signal:AbortSignal.timeout(180000)});
-    // Content-Type 확인 후 JSON 파싱
-    const ct = r.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) {
-      throw new Error('BACKEND_UNAVAILABLE');
-    }
-    const data = await r.json();
+    const data = await safeFetchJson(
+      `${API}/api/forecast/${sym}`,
+      { signal: AbortSignal.timeout(180000) }
+    );
     // Vercel fallback JSON 체크
     if (data.error === true) throw new Error('BACKEND_UNAVAILABLE');
-    if (!r.ok) throw new Error(data.detail || '서버 오류');
     cache[sym] = data;
     updateCard(sym, data);
-    if (!silent || sym===currentSym) { renderResult(data); setStatusMsg(data); }
-  } catch(e) {
+    if (!silent || sym === currentSym) { renderResult(data); setStatusMsg(data); }
+  } catch (e) {
     let msg = e.message || '알 수 없는 오류';
-    if (msg === 'BACKEND_UNAVAILABLE' || msg.includes('not valid JSON') || msg.includes('Unexpected token')) {
-      msg = '백엔드 서버에 연결할 수 없습니다. 로컈에서 <code>uvicorn main:app --port 8000</code> 실행 후 재시도하세요.';
+    if (msg === 'BACKEND_UNAVAILABLE') {
+      msg = '백엔드 서버에 연결할 수 없습니다. 로컬에서 <code>uvicorn main:app --port 8000</code> 실행 후 재시도하세요.';
     } else if (msg.includes('429')) {
       msg = 'API 요청 한도 초과(429). 잠시 후 재시도하세요.';
     } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed')) {
@@ -458,36 +503,91 @@ async function doForecast(sym, silent=false) {
 // ── 렌더링 ────────────────────────────────────────────────────────────────
 function renderResult(data) {
   renderCards(data);
+  renderInterpretBox(data);
   renderChart(data);
   renderTable(data);
   document.getElementById('chart-title').textContent = `${data.name} (${data.symbol}) 30일 예측`;
   document.getElementById('chart-meta').textContent  = 'TimesFM 2.5 Zero-Shot · 과거 90일 + 향후 30일';
+  document.getElementById('chart-note').style.display = '';
+}
+
+function confBadgeClass(score) {
+  if (score >= 70) return 'conf-high';
+  if (score >= 50) return 'conf-mid';
+  if (score >= 30) return 'conf-low';
+  return 'conf-vlow';
+}
+
+function volBadgeClass(level) {
+  if (level === '매우 높음') return 'vol-vhigh';
+  if (level === '높음')     return 'vol-high';
+  return 'vol-badge';
 }
 
 function updateCard(sym, data) {
   const priceEl  = document.getElementById(`ap-${sym}`);
   const changeEl = document.getElementById(`ac-${sym}`);
-  if (priceEl)  priceEl.textContent  = fmtPrice(data.currency, data.current_price, data.symbol);
+  const kfEl     = document.getElementById(`akf-${sym}`);
+
+  if (priceEl)  priceEl.textContent = fmtPrice(data.currency, data.current_price, data.symbol);
   if (changeEl) {
     const s = data.change_24h >= 0 ? '+' : '';
-    changeEl.className = `ac-change ${data.change_24h>=0?'up':'down'}`;
+    changeEl.className = `ac-change ${data.change_24h >= 0 ? 'up' : 'down'}`;
     changeEl.textContent = `${s}${data.change_24h}%`;
+  }
+  if (kfEl) {
+    const kf7 = data.key_forecasts && data.key_forecasts['d7'];
+    if (kf7) {
+      const volCls = volBadgeClass(kf7.volatility_level || '');
+      kfEl.innerHTML =
+        `신뢰도 <span class="conf-badge ${confBadgeClass(kf7.confidence_score)}">${kf7.confidence_score}/100</span>` +
+        ` · 변동성 <span class="${volCls}">${kf7.volatility_level || '—'}</span>` +
+        (kf7.directional_accuracy != null
+          ? ` · 방향성 ${kf7.directional_accuracy}%`
+          : '');
+    } else {
+      kfEl.innerHTML = '';
+    }
   }
 }
 
 function renderCards(data) {
   const c = data.color;
-  for (const d of [1,7,14,30]) {
-    const kf = data.key_forecasts[`d${d}`];
-    const s  = kf.pct_change>=0?'+':'';
-    const cl = kf.pct_change>=0?'up':'down';
+  for (const d of [1, 7, 14, 30]) {
+    const kf  = data.key_forecasts[`d${d}`];
+    const s   = kf.pct_change >= 0 ? '+' : '';
+    const cl  = kf.pct_change >= 0 ? 'up' : 'down';
+    const confCls = confBadgeClass(kf.confidence_score != null ? kf.confidence_score : 0);
+    const mapeStr = kf.mape != null ? `±${kf.mape}%` : '—';
+    const daStr   = kf.directional_accuracy != null ? `${kf.directional_accuracy}%` : '—';
+    const volCls  = volBadgeClass(kf.volatility_level || '');
+
     document.getElementById(`card-d${d}`).innerHTML = `
       <div class="fc-label">${d}일 후</div>
-      <div class="fc-price" style="color:${c}">${fmtPrice(data.currency,kf.price,data.symbol)}</div>
+      <div class="fc-price" style="color:${c}">${fmtPrice(data.currency, kf.price, data.symbol)}</div>
       <div class="fc-pct ${cl}">${s}${kf.pct_change}%</div>
-      <div class="fc-range">범위: ${fmtPrice(data.currency,kf.q10,data.symbol)} ~ ${fmtPrice(data.currency,kf.q90,data.symbol)}</div>
+      <div class="fc-range">범위: ${fmtPrice(data.currency, kf.q10, data.symbol)} ~ ${fmtPrice(data.currency, kf.q90, data.symbol)}</div>
       <div class="fc-date">${kf.date}</div>
+      <div class="fc-meta">
+        신뢰도: <span class="conf-badge ${confCls}">${kf.confidence_score != null ? kf.confidence_score + '/100' : '—'}</span><br>
+        등급: ${kf.confidence_label || '—'}<br>
+        백테스트 오차: ${mapeStr}<br>
+        방향성 적중률: ${daStr}<br>
+        변동성: <span class="${volCls}">${kf.volatility_level || '—'}</span>
+      </div>
     `;
+  }
+}
+
+function renderInterpretBox(data) {
+  const box  = document.getElementById('interpret-box');
+  const text = document.getElementById('interpret-text');
+  const kf7  = data.key_forecasts && data.key_forecasts['d7'];
+  if (kf7 && kf7.interpretation) {
+    text.textContent = kf7.interpretation;
+    box.style.display = '';
+  } else {
+    box.style.display = 'none';
   }
 }
 
@@ -495,7 +595,10 @@ function renderChart(data) {
   const c   = data.color;
   const ctx = document.getElementById('priceChart').getContext('2d');
   const hLen = data.history_prices.length;
-  const allLabels = [...data.history_dates.map(d=>d.slice(5)), ...data.forecast_dates.map(d=>d.slice(5))];
+  const allLabels = [
+    ...data.history_dates.map(d => d.slice(5)),
+    ...data.forecast_dates.map(d => d.slice(5))
+  ];
 
   if (chart) chart.destroy();
   chart = new Chart(ctx, {
@@ -506,57 +609,94 @@ function renderChart(data) {
         {
           label: '실제 가격',
           data: [...data.history_prices, ...Array(30).fill(null)],
-          borderColor: '#58a6ff', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false,
+          borderColor: '#58a6ff',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: false,
+          order: 1,
         },
         {
           label: 'TimesFM 예측',
           data: [...Array(hLen).fill(null), ...data.forecast_prices],
-          borderColor: c, borderWidth: 2.5, borderDash:[6,3], pointRadius: 0, tension: 0.3, fill: false,
+          borderColor: c,
+          borderWidth: 2.5,
+          borderDash: [6, 3],
+          pointRadius: 0,
+          tension: 0.3,
+          fill: false,
+          order: 2,
         },
         {
           label: '90% 상한',
           data: [...Array(hLen).fill(null), ...data.q90],
-          borderColor: 'transparent', backgroundColor: `${c}22`, borderWidth: 0,
-          pointRadius: 0, fill: '+1', tension: 0.3,
+          borderColor: 'transparent',
+          backgroundColor: `${c}33`,
+          borderWidth: 0,
+          pointRadius: 0,
+          fill: '+1',
+          tension: 0.3,
+          order: 3,
         },
         {
           label: '10% 하한',
           data: [...Array(hLen).fill(null), ...data.q10],
-          borderColor: 'transparent', backgroundColor: `${c}22`, borderWidth: 0,
-          pointRadius: 0, fill: false, tension: 0.3,
+          borderColor: 'transparent',
+          backgroundColor: `${c}33`,
+          borderWidth: 0,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.3,
+          order: 4,
         },
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: {mode:'index', intersect:false},
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {labels:{color:'#8b949e',boxWidth:12,font:{size:11}}},
+        legend: { labels: { color: '#8b949e', boxWidth: 12, font: { size: 11 } } },
         tooltip: {
-          backgroundColor:'#161b22', borderColor:'#30363d', borderWidth:1,
-          titleColor:'#e6edf3', bodyColor:'#8b949e',
+          backgroundColor: '#161b22',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
           callbacks: {
-            label: ctx => ctx.parsed.y==null ? null : ` ${ctx.dataset.label}: ${fmtPrice(data.currency,ctx.parsed.y,data.symbol)}`
+            label: ctx => ctx.parsed.y == null ? null
+              : ` ${ctx.dataset.label}: ${fmtPrice(data.currency, ctx.parsed.y, data.symbol)}`
           }
         }
       },
       scales: {
-        x: {ticks:{color:'#8b949e',maxTicksLimit:10,font:{size:10}}, grid:{color:'rgba(48,54,61,.4)'}},
-        y: {ticks:{color:'#8b949e',font:{size:10},callback:v=>fmtPrice(data.currency,v,data.symbol)}, grid:{color:'rgba(48,54,61,.4)'}},
+        x: {
+          ticks: { color: '#8b949e', maxTicksLimit: 10, font: { size: 10 } },
+          grid:  { color: 'rgba(48,54,61,.4)' }
+        },
+        y: {
+          ticks: { color: '#8b949e', font: { size: 10 }, callback: v => fmtPrice(data.currency, v, data.symbol) },
+          grid:  { color: 'rgba(48,54,61,.4)' }
+        },
       }
     },
     plugins: [{
-      id:'divider',
+      id: 'divider',
       afterDraw(ch) {
         const meta = ch.getDatasetMeta(0);
-        const pt   = meta.data[hLen-1];
+        const pt   = meta.data[hLen - 1];
         if (!pt) return;
-        const {top,bottom} = ch.chartArea;
+        const { top, bottom } = ch.chartArea;
         const cx2 = ch.ctx;
         cx2.save();
-        cx2.beginPath(); cx2.moveTo(pt.x,top); cx2.lineTo(pt.x,bottom);
-        cx2.strokeStyle='rgba(139,148,158,.5)'; cx2.lineWidth=1.5; cx2.setLineDash([4,4]); cx2.stroke();
-        cx2.fillStyle='#8b949e'; cx2.font='10px sans-serif'; cx2.fillText('오늘',pt.x+4,top+12);
+        cx2.beginPath(); cx2.moveTo(pt.x, top); cx2.lineTo(pt.x, bottom);
+        cx2.strokeStyle = 'rgba(139,148,158,.5)';
+        cx2.lineWidth = 1.5;
+        cx2.setLineDash([4, 4]);
+        cx2.stroke();
+        cx2.fillStyle = '#8b949e';
+        cx2.font = '10px sans-serif';
+        cx2.fillText('오늘', pt.x + 4, top + 12);
         cx2.restore();
       }
     }]
@@ -566,27 +706,40 @@ function renderChart(data) {
 function renderTable(data) {
   const c = data.color;
   let html = '';
-  for (const d of [1,7,14,30]) {
-    const kf = data.key_forecasts[`d${d}`];
-    const s  = kf.pct_change>=0?'+':'';
-    const cl = kf.pct_change>=0?'up':'down';
+  for (const d of [1, 7, 14, 30]) {
+    const kf     = data.key_forecasts[`d${d}`];
+    const s      = kf.pct_change >= 0 ? '+' : '';
+    const cl     = kf.pct_change >= 0 ? 'up' : 'down';
+    const confCls = confBadgeClass(kf.confidence_score != null ? kf.confidence_score : 0);
+    const mapeStr = kf.mape != null ? `±${kf.mape}%` : '—';
+    const daStr   = kf.directional_accuracy != null ? `${kf.directional_accuracy}%` : '—';
+    const volCls  = volBadgeClass(kf.volatility_level || '');
+
     html += `<tr>
       <td><strong>${d}일 후</strong></td>
       <td style="color:var(--muted)">${kf.date}</td>
-      <td style="color:${c};font-weight:600">${fmtPrice(data.currency,kf.price,data.symbol)}</td>
+      <td style="color:${c};font-weight:600">${fmtPrice(data.currency, kf.price, data.symbol)}</td>
       <td class="${cl}" style="font-weight:600">${s}${kf.pct_change}%</td>
-      <td style="color:var(--muted)">${fmtPrice(data.currency,kf.q10,data.symbol)}</td>
-      <td style="color:var(--muted)">${fmtPrice(data.currency,kf.q90,data.symbol)}</td>
+      <td style="color:var(--muted)">${fmtPrice(data.currency, kf.q10, data.symbol)}</td>
+      <td style="color:var(--muted)">${fmtPrice(data.currency, kf.q90, data.symbol)}</td>
+      <td><span class="conf-badge ${confCls}">${kf.confidence_score != null ? kf.confidence_score + '/100' : '—'}</span></td>
+      <td style="color:var(--muted)">${mapeStr}</td>
+      <td style="color:var(--muted)">${daStr}</td>
+      <td><span class="${volCls}">${kf.volatility_level || '—'}</span></td>
     </tr>`;
   }
   document.getElementById('fc-tbody').innerHTML = html;
 }
 
 function clearCards() {
-  for (const d of [1,7,14,30])
-    document.getElementById(`card-d${d}`).innerHTML = `<div class="fc-label">${d}일 후</div><div class="fc-price" style="color:var(--muted)">—</div>`;
+  for (const d of [1, 7, 14, 30]) {
+    document.getElementById(`card-d${d}`).innerHTML =
+      `<div class="fc-label">${d}일 후</div><div class="fc-price" style="color:var(--muted)">—</div>`;
+  }
   document.getElementById('fc-tbody').innerHTML =
-    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">예측 실행 후 표시됩니다</td></tr>';
+    '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">예측 실행 후 표시됩니다</td></tr>';
+  document.getElementById('interpret-box').style.display = 'none';
+  document.getElementById('chart-note').style.display = 'none';
 }
 
 function setStatusMsg(data) {
@@ -597,18 +750,17 @@ function setStatusMsg(data) {
 
 // ── 포맷 유틸 ─────────────────────────────────────────────────────────────
 function fmtPrice(currency, price, symbol) {
-  if (price==null||isNaN(price)) return '—';
-  if (currency==='KRW') {
-    // KOSPI 지수는 단위 없이 숫자만
-    if (symbol==='KOSPI') return price.toLocaleString('ko-KR', {minimumFractionDigits:2, maximumFractionDigits:2});
-    return price.toLocaleString('ko-KR')+'원';
+  if (price == null || isNaN(price)) return '—';
+  if (currency === 'KRW') {
+    if (symbol === 'KOSPI') return price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return price.toLocaleString('ko-KR') + '원';
   }
-  if (price < 10)  return '$'+price.toFixed(4);
-  if (price < 100) return '$'+price.toFixed(2);
-  return '$'+price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+  if (price < 10)  return '$' + price.toFixed(4);
+  if (price < 100) return '$' + price.toFixed(2);
+  return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
