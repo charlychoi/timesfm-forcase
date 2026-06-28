@@ -26,6 +26,7 @@ from datetime import datetime, timedelta
 
 import requests as http_requests
 import pandas as pd
+import yfinance as yf
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
@@ -223,7 +224,6 @@ def fetch_kr_stock_prices(ticker: str) -> tuple[np.ndarray, float, float]:
     if cached and (now - cached["ts"]) < TTL["kr_stock"]["price"]:
         return np.array(cached["prices"], dtype=np.float32), cached["current"], cached["change_24h"]
 
-    import yfinance as yf
     df = yf.download(ticker, period="1y", interval="1d", progress=False, auto_adjust=True)
     if df.empty:
         raise HTTPException(status_code=503, detail=f"{ticker} 데이터 수집 실패")
@@ -937,6 +937,7 @@ _us_forecast_cache: dict = {}
 
 def resolve_us_ticker(query: str) -> tuple[str, str] | None:
     """한국어 종목명 또는 영문 티커 → (ticker, 표시명). 없으면 None."""
+    import re
     q = query.strip()
 
     # 1. 한국어 이름 맵
@@ -944,19 +945,10 @@ def resolve_us_ticker(query: str) -> tuple[str, str] | None:
         ticker = US_STOCK_NAME_MAP[q]
         return ticker, q
 
-    # 2. 대문자 티커로 yfinance 검증
-    ticker_up = q.upper().replace(" ", "").replace(".", "-")
-    try:
-        hist = yf.Ticker(ticker_up).history(period="5d", interval="1d")
-        if not hist.empty:
-            try:
-                info = yf.Ticker(ticker_up).info
-                name = info.get("longName") or info.get("shortName") or ticker_up
-            except Exception:
-                name = ticker_up
-            return ticker_up, name
-    except Exception:
-        pass
+    # 2. 영문 티커 패턴: 1~6자 대문자+숫자, 하이픈·점 허용 (TSLA, BRK-B, BF.B 등)
+    ticker_up = q.upper().replace(" ", "")
+    if re.match(r'^[A-Z][A-Z0-9]{0,5}([.\-][A-Z]{1,2})?$', ticker_up):
+        return ticker_up, ticker_up
 
     return None
 
