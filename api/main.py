@@ -889,7 +889,200 @@ def clear_cache():
     _price_cache.clear()
     _forecast_cache.clear()
     _backtest_cache.clear()
+    _us_forecast_cache.clear()
     return {"status": "cleared"}
+
+
+# ── 미국 주식 번외 예측 ───────────────────────────────────────────────────────
+
+US_STOCK_NAME_MAP: dict[str, str] = {
+    # 기술 대형주
+    "테슬라": "TSLA", "아마존": "AMZN", "구글": "GOOGL", "알파벳": "GOOGL",
+    "애플": "AAPL", "마이크로소프트": "MSFT", "엔비디아": "NVDA",
+    "메타": "META", "페이스북": "META", "넷플릭스": "NFLX",
+    # 반도체
+    "인텔": "INTC", "퀄컴": "QCOM", "브로드컴": "AVGO",
+    "AMD": "AMD", "마이크론": "MU", "TSMC": "TSM", "ARM": "ARM",
+    # 클라우드/SaaS
+    "오라클": "ORCL", "세일즈포스": "CRM", "어도비": "ADBE",
+    "팔란티어": "PLTR", "스노우플레이크": "SNOW", "줌": "ZM",
+    "블록": "SQ", "스퀘어": "SQ", "쇼피파이": "SHOP",
+    # 플랫폼/이커머스
+    "우버": "UBER", "에어비앤비": "ABNB", "리프트": "LYFT",
+    "스포티파이": "SPOT", "스냅": "SNAP", "코인베이스": "COIN",
+    "로블록스": "RBLX", "도어대시": "DASH",
+    # 금융
+    "버크셔": "BRK-B", "버크셔해서웨이": "BRK-B",
+    "제이피모건": "JPM", "골드만삭스": "GS", "모건스탠리": "MS",
+    "뱅크오브아메리카": "BAC", "씨티": "C", "웰스파고": "WFC",
+    "비자": "V", "마스터카드": "MA", "아메리칸익스프레스": "AXP", "페이팔": "PYPL",
+    # 헬스케어/바이오
+    "화이자": "PFE", "모더나": "MRNA", "존슨앤존슨": "JNJ",
+    "일라이릴리": "LLY", "노보노디스크": "NVO", "애브비": "ABBV",
+    # 소비재
+    "디즈니": "DIS", "나이키": "NKE", "스타벅스": "SBUX",
+    "맥도날드": "MCD", "월마트": "WMT", "코스트코": "COST", "타겟": "TGT",
+    # 에너지/산업
+    "엑손모빌": "XOM", "쉐브론": "CVX", "보잉": "BA", "캐터필러": "CAT",
+    # 전기차/미래차
+    "리비안": "RIVN", "루시드": "LCID", "니오": "NIO",
+    # 마이크로스트래티지 (비트코인 연계)
+    "마이크로스트래티지": "MSTR", "마이크로스트레티지": "MSTR",
+    # ETF
+    "S&P500": "SPY", "나스닥100": "QQQ", "나스닥": "QQQ",
+    "다우": "DIA", "반도체ETF": "SOXX",
+}
+_us_forecast_cache: dict = {}
+
+
+def resolve_us_ticker(query: str) -> tuple[str, str] | None:
+    """한국어 종목명 또는 영문 티커 → (ticker, 표시명). 없으면 None."""
+    q = query.strip()
+
+    # 1. 한국어 이름 맵
+    if q in US_STOCK_NAME_MAP:
+        ticker = US_STOCK_NAME_MAP[q]
+        return ticker, q
+
+    # 2. 대문자 티커로 yfinance 검증
+    ticker_up = q.upper().replace(" ", "").replace(".", "-")
+    try:
+        hist = yf.Ticker(ticker_up).history(period="5d", interval="1d")
+        if not hist.empty:
+            try:
+                info = yf.Ticker(ticker_up).info
+                name = info.get("longName") or info.get("shortName") or ticker_up
+            except Exception:
+                name = ticker_up
+            return ticker_up, name
+    except Exception:
+        pass
+
+    return None
+
+
+def _do_forecast_us(ticker: str, display_name: str) -> dict:
+    """미국 주식 TimesFM 30일 예측 (일별)"""
+    t0  = time.time()
+    now = t0
+
+    try:
+        hist = yf.Ticker(ticker).history(period="2y", interval="1d")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Yahoo Finance 오류: {e}")
+
+    if hist.empty or len(hist) < 30:
+        raise HTTPException(status_code=404, detail=f"데이터 부족: {ticker} ({len(hist)}일)")
+
+    closes = hist["Close"].dropna()
+    prices = closes.values.astype(np.float32)
+    dates  = [d.strftime("%Y-%m-%d") for d in closes.index]
+
+    change_24h = round((float(prices[-1]) / float(prices[-2]) - 1) * 100, 2) if len(prices) > 1 else 0.0
+
+    # TimesFM 추론
+    model   = get_model()
+    context = prices[-256:] if len(prices) >= 256 else prices
+    point_forecast, quantile_forecast = model.forecast(horizon=30, inputs=[context])
+    pf = point_forecast[0]
+
+    if quantile_forecast is not None and not np.any(np.isnan(quantile_forecast[0, :, 1])):
+        q10 = quantile_forecast[0, :, 1].tolist()
+        q90 = quantile_forecast[0, :, 8].tolist()
+    else:
+        q10 = (pf * 0.95).tolist()
+        q90 = (pf * 1.05).tolist()
+
+    pf_list = pf.tolist()
+    today   = datetime.utcnow().date()
+
+    forecast_dates = [(today + timedelta(days=i + 1)).isoformat() for i in range(30)]
+    history_prices = prices[-90:].tolist()
+    history_dates  = dates[-90:]
+
+    vol_info = calculate_volatility_level(prices.tolist(), "kr_stock")
+
+    KF_KEYS = ["d1", "d7", "d14", "d30"]
+    key_forecasts = {}
+    for kk, horizon, label in zip(KF_KEYS, _D, _DL):
+        idx    = min(horizon - 1, len(pf_list) - 1)
+        fc     = pf_list[idx]
+        pct    = (fc / float(prices[-1]) - 1) * 100 if prices[-1] else 0
+        rng_p  = round((q90[idx] - q10[idx]) / fc * 100, 1) if fc > 0 else None
+        conf   = calculate_confidence_score(None, None, vol_info["level"], rng_p, horizon, False)
+        interp = generate_interpretation(
+            display_name, horizon, round(pct, 2),
+            conf["score"], conf["label"], vol_info["level"], None, rng_p, "일",
+        )
+        key_forecasts[kk] = {
+            "horizon": horizon, "horizon_unit": "일", "label": label,
+            "date":    forecast_dates[idx] if idx < len(forecast_dates) else "",
+            "price":   round(fc, 2), "q10": round(q10[idx], 2), "q90": round(q90[idx], 2),
+            "pct_change": round(pct, 2), "range_pct": rng_p,
+            "mape": None, "directional_accuracy": None,
+            "volatility_level": vol_info["level"], "volatility_warning": vol_info["warning"],
+            "confidence_score": conf["score"], "confidence_label": conf["label"],
+            "interpretation": interp,
+        }
+
+    return {
+        "symbol":          ticker,
+        "name":            display_name,
+        "color":           "#00D4FF",
+        "type":            "us_stock",
+        "currency":        "USD",
+        "unit":            "",
+        "time_unit":       "일",
+        "current_price":   round(float(prices[-1]), 2),
+        "change_24h":      change_24h,
+        "volatility":      vol_info,
+        "forecast_dates":  forecast_dates,
+        "forecast_prices": [round(p, 2) for p in pf_list],
+        "q10":             [round(p, 2) for p in q10],
+        "q90":             [round(p, 2) for p in q90],
+        "history_dates":   history_dates,
+        "history_prices":  [round(p, 2) for p in history_prices],
+        "key_forecasts":   key_forecasts,
+        "elapsed_sec":     round(time.time() - t0, 2),
+        "generated_at":    datetime.utcnow().isoformat() + "Z",
+        "cached":          False,
+    }
+
+
+@app.get("/api/us/resolve/{query}")
+def us_resolve(query: str):
+    """종목명/코드 → ticker 확인 (예측 없음, 빠른 검증용)"""
+    resolved = resolve_us_ticker(query)
+    if not resolved:
+        raise HTTPException(
+            status_code=404,
+            detail=f"'{query}' 종목을 찾을 수 없습니다. 티커(TSLA) 또는 한국어 종목명(테슬라)으로 입력하세요."
+        )
+    ticker, name = resolved
+    return {"ticker": ticker, "name": name, "query": query}
+
+
+@app.get("/api/us/forecast/{query}")
+def forecast_us(query: str):
+    """미국 주식 번외 예측"""
+    resolved = resolve_us_ticker(query)
+    if not resolved:
+        raise HTTPException(
+            status_code=404,
+            detail=f"'{query}' 종목을 찾을 수 없습니다. 티커(TSLA) 또는 한국어 종목명(테슬라)으로 입력하세요."
+        )
+    ticker, display_name = resolved
+    cache_key = f"US:{ticker}"
+    now       = time.time()
+    cached    = _us_forecast_cache.get(cache_key)
+    if cached and (now - cached["ts"]) < 600:
+        result = dict(cached["data"])
+        result["cached"] = True
+        result["cache_age_sec"] = round(now - cached["ts"], 0)
+        return result
+    result = _do_forecast_us(ticker, display_name)
+    _us_forecast_cache[cache_key] = {"data": result, "ts": now}
+    return result
 
 
 # ── 프론트엔드 서빙 ───────────────────────────────────────────────────────

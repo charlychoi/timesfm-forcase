@@ -202,6 +202,24 @@
     @media(max-width:700px){#summary-grid{grid-template-columns:repeat(2,1fr);}}
     @media(max-width:400px){#summary-grid{grid-template-columns:repeat(1,1fr);}}
 
+    /* 미국 주식 번외 검색 */
+    .us-search-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px 28px 24px;margin-bottom:16px;}
+    .us-search-badge{display:inline-block;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:#00D4FF;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:14px;}
+    .us-search-title{font-size:20px;font-weight:700;margin-bottom:6px;}
+    .us-search-sub{font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.7;}
+    .us-search-row{display:flex;gap:10px;margin-bottom:14px;}
+    #us-query{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 18px;color:var(--text);font-size:16px;outline:none;font-family:inherit;}
+    #us-query:focus{border-color:#00D4FF;}
+    #us-query::placeholder{color:var(--muted);}
+    #btn-us-search{padding:13px 24px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.4);border-radius:10px;color:#00D4FF;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.2s;}
+    #btn-us-search:hover{background:rgba(0,212,255,.25);}
+    #btn-us-search:disabled{opacity:.5;cursor:not-allowed;}
+    .us-chips{display:flex;flex-wrap:wrap;gap:8px;}
+    .us-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:13px;color:var(--muted);cursor:pointer;transition:.2s;}
+    .us-chip:hover{border-color:#00D4FF;color:#00D4FF;}
+    .us-result-label{font-size:13px;color:var(--muted);margin:18px 0 10px;padding-top:18px;border-top:1px solid var(--border);}
+    @media(max-width:500px){.us-search-row{flex-direction:column;}#btn-us-search{width:100%;}}
+
     footer{text-align:center;padding:20px 16px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:12px;line-height:1.9;}
     footer a{color:var(--muted);text-decoration:none;}
     footer a:hover{color:var(--text);}
@@ -298,6 +316,7 @@
     <div class="cat-tab"       data-cat="exchange"  onclick="switchCat('exchange')">💱 환율</div>
     <div class="cat-tab"       data-cat="apt"       onclick="switchCat('apt')">🏢 아파트</div>
     <div class="cat-tab"       data-cat="cpi"       onclick="switchCat('cpi')">📊 물가</div>
+    <div class="cat-tab"       data-cat="us_stock"  onclick="switchCat('us_stock')" style="border-color:rgba(0,212,255,.3);color:#00D4FF;">🌐 미국 주식 <span style="font-size:11px;opacity:.7;">(번외)</span></div>
   </div>
 
   <!-- Asset grid — crypto -->
@@ -422,6 +441,35 @@
       <div class="ac-price" id="ap-CPI-HOUSING">—</div>
       <div class="ac-change" id="ac-CPI-HOUSING">—</div>
       <div class="ac-kf" id="akf-CPI-HOUSING"></div>
+    </div>
+  </div>
+
+  <!-- Asset grid — us_stock 번외 (hidden by default) -->
+  <div id="grid-us_stock" style="display:none">
+    <div class="us-search-wrap">
+      <div class="us-search-badge">🌐 번외 기능</div>
+      <div class="us-search-title">미국 주식 AI 예측</div>
+      <div class="us-search-sub">
+        종목명(한국어/영어) 또는 종목코드를 입력하면 TimesFM이 30일 예측을 실행합니다.<br>
+        ※ 이 기능은 한국경제 대시보드의 번외 기능으로, 투자 권유가 아닙니다.
+      </div>
+      <div class="us-search-row">
+        <input type="text" id="us-query" placeholder="예: 테슬라, 아마존, TSLA, NVDA, MSFT ..." onkeydown="if(event.key==='Enter')searchUSStock()" />
+        <button id="btn-us-search" onclick="searchUSStock()">🔮 예측 실행</button>
+      </div>
+      <div class="us-chips">
+        <span class="us-chip" onclick="quickUSSearch('테슬라')">테슬라</span>
+        <span class="us-chip" onclick="quickUSSearch('아마존')">아마존</span>
+        <span class="us-chip" onclick="quickUSSearch('구글')">구글</span>
+        <span class="us-chip" onclick="quickUSSearch('엔비디아')">엔비디아</span>
+        <span class="us-chip" onclick="quickUSSearch('애플')">애플</span>
+        <span class="us-chip" onclick="quickUSSearch('마이크로소프트')">마이크로소프트</span>
+        <span class="us-chip" onclick="quickUSSearch('메타')">메타</span>
+        <span class="us-chip" onclick="quickUSSearch('넷플릭스')">넷플릭스</span>
+        <span class="us-chip" onclick="quickUSSearch('팔란티어')">팔란티어</span>
+        <span class="us-chip" onclick="quickUSSearch('COIN')">코인베이스</span>
+      </div>
+      <div class="us-result-label" id="us-result-label" style="display:none">📊 예측 결과</div>
     </div>
   </div>
 
@@ -602,6 +650,7 @@ const CAT_SYMS = {
   exchange: ['USDKRW', 'JPYKRW'],
   apt:      ['APT-SEOUL', 'APT-GANGNAM', 'APT-NOWON'],
   cpi:      ['CPI-TOTAL', 'CPI-FOOD', 'CPI-HOUSING'],
+  us_stock: [],  // 동적 — 검색 시 채워짐
 };
 
 // ── safeFetchJson ─────────────────────────────────────────────────────────
@@ -842,6 +891,13 @@ function switchCat(cat) {
   document.getElementById('grid-exchange').style.display = cat === 'exchange' ? 'grid' : 'none';
   document.getElementById('grid-apt').style.display      = cat === 'apt'      ? 'grid' : 'none';
   document.getElementById('grid-cpi').style.display      = cat === 'cpi'      ? 'grid' : 'none';
+  document.getElementById('grid-us_stock').style.display = cat === 'us_stock' ? 'block' : 'none';
+  if (cat === 'us_stock') {
+    // 미국 주식은 검색 패널 — 자산 선택 없이 입력 포커스
+    document.getElementById('interpret-box').style.display = 'none';
+    setTimeout(() => document.getElementById('us-query')?.focus(), 100);
+    return;
+  }
   const first = CAT_SYMS[cat][0];
   selectAsset(first);
 }
@@ -1202,12 +1258,64 @@ function fmtPrice(currency, price, symbol) {
     if (symbol && symbol.startsWith('APT-')) return price.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + '만원/㎡';
     return price.toLocaleString('ko-KR') + '원';
   }
+  if (currency === 'USD') {
+    if (price < 1)   return '$' + price.toFixed(4);
+    if (price < 10)  return '$' + price.toFixed(3);
+    if (price < 100) return '$' + price.toFixed(2);
+    return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
   if (price < 10)  return '$' + price.toFixed(4);
   if (price < 100) return '$' + price.toFixed(2);
   return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── 미국 주식 번외 검색 ────────────────────────────────────────────────────
+function quickUSSearch(query) {
+  document.getElementById('us-query').value = query;
+  searchUSStock();
+}
+
+async function searchUSStock() {
+  const query = (document.getElementById('us-query').value || '').trim();
+  if (!query) { alert('종목명 또는 코드를 입력하세요.'); return; }
+
+  const btn = document.getElementById('btn-us-search');
+  btn.disabled = true; btn.textContent = '예측 중...';
+  document.getElementById('status-msg').textContent = `${query} 예측 중...`;
+  document.getElementById('err-msg').style.display = 'none';
+  document.getElementById('interpret-box').style.display = 'none';
+  document.getElementById('us-result-label').style.display = 'none';
+
+  const loading = document.getElementById('chart-loading');
+  loading.style.display = 'flex';
+
+  try {
+    const data = await safeFetchJson(`${API}/api/us/forecast/${encodeURIComponent(query)}`, {
+      signal: AbortSignal.timeout(180000)
+    });
+    // 미국 주식은 고정 색상
+    data.color = '#00D4FF';
+    // currentSym 을 ticker로 설정
+    currentSym = data.symbol;
+    renderResult(data);
+    setStatusMsg(data);
+    document.getElementById('us-result-label').style.display = 'block';
+    document.getElementById('us-result-label').textContent =
+      `📊 ${data.name || data.symbol} (${data.symbol}) 예측 결과`;
+    // 액션 버튼 숨기기 (미국주식엔 별도 예측버튼 불필요)
+  } catch(e) {
+    const msg = e.message || String(e);
+    const errEl = document.getElementById('err-msg');
+    errEl.style.display = 'block';
+    errEl.textContent = `오류: ${msg}`;
+    document.getElementById('status-msg').textContent = '예측 실패';
+  } finally {
+    loading.style.display = 'none';
+    btn.disabled = false; btn.textContent = '🔮 예측 실행';
+  }
+}
 
 // ── 요약 바 업데이트 ──────────────────────────────────────────────────────
 function updateSummaryBar(sym, data) {
