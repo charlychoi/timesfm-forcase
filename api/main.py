@@ -35,7 +35,7 @@ torch.set_float32_matmul_precision("high")
 
 app = FastAPI(title="TimesFM 한국경제 대시보드", version="4.0.0")
 
-ECOS_API_KEY  = os.getenv("ECOS_API_KEY",  "SQIJXZ0X565GGLIGB4LM")
+ECOS_API_KEY  = os.getenv("ECOS_API_KEY", "").strip()
 MOLIT_API_KEY = os.getenv("MOLIT_API_KEY", "")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -254,6 +254,12 @@ def fetch_ecos_timeseries(
     cached = _price_cache.get(cache_key)
     if cached and (now - cached["ts"]) < TTL[asset_type]["price"]:
         return np.array(cached["prices"], dtype=np.float32), cached["current"], cached["change_24h"]
+
+    if not ECOS_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="ECOS_API_KEY 미설정. 한국은행 ECOS Open API 키를 .env 에 설정하세요. (https://ecos.bok.or.kr/api/)",
+        )
 
     if freq == "M":
         end_dt   = datetime.now()
@@ -807,21 +813,26 @@ def run_forecast(symbol: str) -> dict:
 # ── 엔드포인트 ────────────────────────────────────────────────────────────
 @app.get("/api/health")
 def health():
-    ecos_status = "ok"
-    try:
-        test_url = (
-            f"https://ecos.bok.or.kr/api/StatisticSearch/{ECOS_API_KEY}"
-            f"/json/kr/1/1/731Y001/D/20260101/20260101/0000001"
-        )
-        r = http_requests.get(test_url, timeout=5)
-        ecos_status = "ok" if r.status_code == 200 else f"error({r.status_code})"
-    except Exception:
-        ecos_status = "unreachable"
+    # 키 값 자체는 절대 응답에 포함하지 않음
+    if not ECOS_API_KEY:
+        ecos_status = "미설정 (환율·물가 예측 불가)"
+    else:
+        ecos_status = "ok"
+        try:
+            test_url = (
+                f"https://ecos.bok.or.kr/api/StatisticSearch/{ECOS_API_KEY}"
+                f"/json/kr/1/1/731Y001/D/20260101/20260101/0000001"
+            )
+            r = http_requests.get(test_url, timeout=5)
+            ecos_status = "ok" if r.status_code == 200 else f"error({r.status_code})"
+        except Exception:
+            ecos_status = "unreachable"
 
     return {
         "status":          "ok",
         "model_loaded":    _model_loaded,
         "ecos_api":        ecos_status,
+        "ecos_api_key":    "설정됨" if ECOS_API_KEY else "미설정",
         "molit_api_key":   "설정됨" if MOLIT_API_KEY else "미설정 (아파트 예측 불가)",
         "forecast_cache":  {s: bool(_forecast_cache.get(s)) for s in ASSETS},
         "backtest_cache":  {s: bool(_backtest_cache.get(s)) for s in ASSETS},
